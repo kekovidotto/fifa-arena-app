@@ -1,16 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  boolean, index,   integer,
-  pgEnum,
-  pgTable,
-  serial,
-  text,
-timestamp,
-  varchar} from "drizzle-orm/pg-core";
-
-export const matchTypeEnum = pgEnum("match_type", ["GROUP", "KNOCKOUT"]);
-export const matchStatusEnum = pgEnum("match_status", ["PENDING", "FINISHED"]);
-
+import { boolean, index,pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -102,44 +91,3 @@ export const accountRelations = relations(account, ({ one }) => ({
     references: [user.id],
   }),
 }));
-
-
-export const groups = pgTable("groups", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 50 }).notNull(),
-});
-
-export const players = pgTable("players", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  teamName: varchar("team_name", { length: 255 }).notNull(),
-  teamLogo: varchar("team_logo", { length: 500 }),
-  groupId: integer("group_id").references(() => groups.id),
-});
-
-export const matches = pgTable("matches", {
-  id: serial("id").primaryKey(),
-  playerHomeId: integer("player_home_id")
-    .notNull()
-    .references(() => players.id),
-  playerAwayId: integer("player_away_id")
-    .notNull()
-    .references(() => players.id),
-  scoreHome: integer("score_home").default(0).notNull(),
-  scoreAway: integer("score_away").default(0).notNull(),
-  type: matchTypeEnum("type").notNull(),
-  stage: text("stage").notNull(),
-  status: matchStatusEnum("status").default("PENDING").notNull(),
-  groupId: integer("group_id").references(() => groups.id),
-});
-
-export const goals = pgTable("goals", {
-  id: serial("id").primaryKey(),
-  matchId: integer("match_id")
-    .notNull()
-    .references(() => matches.id),
-  playerId: integer("player_id")
-    .notNull()
-    .references(() => players.id),
-  count: integer("count").notNull().default(0),
-});
