@@ -14,22 +14,33 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import type { TeamLibraryRow } from "@/app/actions/teams";
 import { generateTournament } from "@/app/actions/tournament";
 import { searchAppUsers } from "@/app/actions/users";
+import { TeamAutocomplete } from "@/components/register/team-autocomplete";
 
 interface LobbyPlayer {
   name: string;
   team: string;
+  teamLogo?: string | null;
+  teamLibraryId?: number | null;
   userId?: string | null;
   linkedLabel?: string | null;
 }
 
 const MIN_PLAYERS = 4;
 
-export function RegisterContent() {
+export function RegisterContent({
+  teamsLibrary,
+}: {
+  teamsLibrary: TeamLibraryRow[];
+}) {
   const [players, setPlayers] = useState<LobbyPlayer[]>([]);
   const [playerName, setPlayerName] = useState("");
   const [teamName, setTeamName] = useState("");
+  const [teamLogo, setTeamLogo] = useState<string | null>(null);
+  const [teamLibraryId, setTeamLibraryId] = useState<number | null>(null);
+  const [manualTeam, setManualTeam] = useState(false);
   const [linkedUserId, setLinkedUserId] = useState<string | null>(null);
   const [linkedLabel, setLinkedLabel] = useState<string | null>(null);
   const [userQuery, setUserQuery] = useState("");
@@ -81,12 +92,17 @@ export function RegisterContent() {
       {
         name: playerName.trim(),
         team: teamName.trim(),
+        teamLogo: teamLogo ?? null,
+        teamLibraryId: teamLibraryId ?? null,
         userId: linkedUserId,
         linkedLabel: linkedLabel,
       },
     ]);
     setPlayerName("");
     setTeamName("");
+    setTeamLogo(null);
+    setTeamLibraryId(null);
+    setManualTeam(false);
     clearLinkedUser();
   }
 
@@ -109,6 +125,8 @@ export function RegisterContent() {
           name: p.name,
           team: p.team,
           userId: p.userId ?? undefined,
+          teamLogo: p.teamLogo ?? null,
+          teamLibraryId: p.teamLibraryId ?? null,
         })),
       );
       router.push("/dashboard");
@@ -162,14 +180,31 @@ export function RegisterContent() {
               onKeyDown={handleKeyDown}
               className="neon-input w-full rounded-lg bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-all"
             />
-            <input
-              type="text"
-              placeholder="Time / Seleção"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="neon-input w-full rounded-lg bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-all"
-            />
+            <div onKeyDown={handleKeyDown}>
+              <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                Time / seleção
+              </p>
+              <TeamAutocomplete
+                teams={teamsLibrary}
+                teamName={teamName}
+                teamLogo={teamLogo}
+                teamLibraryId={teamLibraryId}
+                manualMode={manualTeam}
+                onLibraryPick={(t) => {
+                  setManualTeam(false);
+                  setTeamName(t.name);
+                  setTeamLogo(t.logoUrl);
+                  setTeamLibraryId(t.id);
+                }}
+                onEnableManual={() => {
+                  setManualTeam(true);
+                  setTeamLibraryId(null);
+                  setTeamLogo(null);
+                  setTeamName("");
+                }}
+                onManualNameChange={setTeamName}
+              />
+            </div>
 
             <div className="rounded-lg border border-neon-blue/20 bg-neon-blue/5 p-3">
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-neon-blue">
@@ -227,9 +262,11 @@ export function RegisterContent() {
                         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-white/10"
                       >
                         {u.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={u.image}
                             alt=""
+                            referrerPolicy="no-referrer"
                             className="size-7 shrink-0 rounded-full object-cover"
                           />
                         ) : (
@@ -284,8 +321,16 @@ export function RegisterContent() {
                       <p className="truncate text-sm font-semibold text-white">
                         {player.name}
                       </p>
-                      <p className="truncate text-xs text-neon-blue">
-                        {player.team}
+                      <p className="flex items-center gap-2 truncate text-xs text-neon-blue">
+                        {player.teamLogo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={player.teamLogo}
+                            alt=""
+                            className="size-5 shrink-0 rounded border border-white/10 object-contain"
+                          />
+                        ) : null}
+                        <span className="truncate">{player.team}</span>
                       </p>
                       {player.linkedLabel && (
                         <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-neon-green/80">

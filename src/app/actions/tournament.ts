@@ -18,6 +18,9 @@ export interface PlayerInput {
   name: string;
   team: string;
   userId?: string | null;
+  /** Preenchido ao escolher time da biblioteca */
+  teamLogo?: string | null;
+  teamLibraryId?: number | null;
 }
 
 function shuffle<T>(array: T[]): T[] {
@@ -90,6 +93,9 @@ export async function generateTournament(playerInputs: PlayerInput[]) {
           groupPlayerInputs.map((p) => ({
             name: p.name,
             teamName: p.team,
+            teamLogo:
+              p.teamLogo?.trim() ? p.teamLogo.trim().slice(0, 500) : null,
+            teamId: p.teamLibraryId ?? null,
             groupId: group.id,
             userId: p.userId?.trim() ? p.userId.trim() : null,
           })),

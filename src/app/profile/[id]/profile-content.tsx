@@ -167,6 +167,7 @@ export function ProfileContent({
               <img
                 src={user.image}
                 alt=""
+                referrerPolicy="no-referrer"
                 className="relative size-full rounded-full border-2 border-white/10 object-cover ring-2 ring-neon-green/30"
               />
             ) : (

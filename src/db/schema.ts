@@ -29,6 +29,12 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "FAIR_PLAY",
 ]);
 
+/** Clubes europeus (UCL) vs seleções (Copa do Mundo). */
+export const teamLibraryCategoryEnum = pgEnum("team_library_category", [
+  "EUROPE",
+  "WORLD_CUP",
+]);
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -108,6 +114,17 @@ export const tournaments = pgTable("tournaments", {
   status: tournamentStatusEnum("status").notNull().default("ACTIVE"),
 });
 
+export const teamsLibrary = pgTable(
+  "teams_library",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    logoUrl: text("logo_url").notNull(),
+    category: teamLibraryCategoryEnum("category").notNull(),
+  },
+  (table) => [index("teams_library_category_idx").on(table.category)],
+);
+
 export const groups = pgTable("groups", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 50 }).notNull(),
@@ -121,6 +138,9 @@ export const players = pgTable("players", {
   name: varchar("name", { length: 255 }).notNull(),
   teamName: varchar("team_name", { length: 255 }).notNull(),
   teamLogo: varchar("team_logo", { length: 500 }),
+  teamId: integer("team_id").references(() => teamsLibrary.id, {
+    onDelete: "set null",
+  }),
   groupId: integer("group_id").references(() => groups.id),
   userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
 });
@@ -197,6 +217,10 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
+export const teamsLibraryRelations = relations(teamsLibrary, ({ many }) => ({
+  players: many(players),
+}));
+
 export const tournamentsRelations = relations(tournaments, ({ many }) => ({
   groups: many(groups),
   matches: many(matches),
@@ -216,6 +240,10 @@ export const playersRelations = relations(players, ({ one }) => ({
   group: one(groups, {
     fields: [players.groupId],
     references: [groups.id],
+  }),
+  libraryTeam: one(teamsLibrary, {
+    fields: [players.teamId],
+    references: [teamsLibrary.id],
   }),
   appUser: one(user, {
     fields: [players.userId],

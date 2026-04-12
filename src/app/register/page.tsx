@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { listTeamsLibrary } from "@/app/actions/teams";
 import { isAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 
@@ -19,5 +20,7 @@ export default async function RegisterPage() {
     redirect("/dashboard");
   }
 
-  return <RegisterContent />;
+  const teamsLibrary = await listTeamsLibrary();
+
+  return <RegisterContent teamsLibrary={teamsLibrary} />;
 }

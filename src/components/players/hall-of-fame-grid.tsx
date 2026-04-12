@@ -72,6 +72,7 @@ export function HallOfFameGrid({ players }: { players: HallPlayer[] }) {
                   <img
                     src={p.image}
                     alt=""
+                    referrerPolicy="no-referrer"
                     className="relative size-16 rounded-full border border-white/15 object-cover ring-2 ring-neon-green/25"
                   />
                 ) : (

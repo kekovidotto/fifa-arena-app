@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:seed:teams": "tsx src/db/seed-teams.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.2",
