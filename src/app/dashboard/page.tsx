@@ -1,9 +1,12 @@
 import { asc } from "drizzle-orm";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { db } from "@/db";
 import { groups, matches, players } from "@/db/schema";
+import { auth } from "@/lib/auth";
 import {
   buildMatchCards,
   calculateStandings,
@@ -11,6 +14,12 @@ import {
 } from "@/lib/tournament-utils";
 
 export default async function DashboardPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session) {
+    redirect("/authentication");
+  }
   const [allGroups, allPlayers, allMatches] = await Promise.all([
     db.select().from(groups).orderBy(asc(groups.id)),
     db.select().from(players),
