@@ -1,7 +1,5 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
@@ -22,10 +20,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { authClient } from "@/lib/auth-client";
 
-const registerSchema = z.object({
-  name: z.string().trim().min(1, { message: "Nome é obrigatório" }),
+const loginSchema = z.object({
   email: z
     .string()
     .trim()
@@ -37,30 +33,18 @@ const registerSchema = z.object({
     .min(8, { message: "Senha deve ter pelo menos 8 caracteres" }),
 });
 
-function SignUpForm() {
-  const router = useRouter();
-  const form = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
+function LoginForm() {
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
-      name: "",
       email: "",
       password: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof registerSchema>) {
-    await authClient.signUp.email(
-      {
-        email: values.email,
-        password: values.password,
-        name: values.name,
-      },
-      {
-        onSuccess: () => {
-          router.push("/dashboard");
-        },
-      },
-    );
+  function onSubmit(data: z.infer<typeof loginSchema>) {
+    // Do something with the form values.
+    console.log(data);
   }
   return (
     <Card>
@@ -71,30 +55,10 @@ function SignUpForm() {
       >
         <FieldGroup>
           <CardHeader>
-            <CardTitle>Criar conta</CardTitle>
-            <CardDescription>Crie uma conta para continuar</CardDescription>
+            <CardTitle>Login</CardTitle>
+            <CardDescription>Faça login para continuar</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Controller
-              name="name"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-rhf-demo-name">Nome</FieldLabel>
-                  <Input
-                    {...field}
-                    type="text"
-                    id="form-rhf-demo-name"
-                    aria-invalid={fieldState.invalid}
-                    placeholder="Nome do usuário"
-                    autoComplete="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
             <Controller
               name="email"
               control={form.control}
@@ -139,16 +103,8 @@ function SignUpForm() {
             />
           </CardContent>
           <CardFooter>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                "Criar conta"
-              )}
+            <Button type="submit" className="w-full">
+              Login
             </Button>
           </CardFooter>
         </FieldGroup>
@@ -157,4 +113,4 @@ function SignUpForm() {
   );
 }
 
-export default SignUpForm;
+export default LoginForm;
