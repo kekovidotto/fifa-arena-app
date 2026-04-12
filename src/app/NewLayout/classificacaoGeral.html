@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#a5aabe",
+                        "surface-container-high": "#181f32",
+                        "inverse-surface": "#faf8ff",
+                        "on-secondary-container": "#fff6ed",
+                        "primary": "#85adff",
+                        "surface-tint": "#85adff",
+                        "on-surface": "#e3e7fc",
+                        "on-secondary-fixed-variant": "#684c00",
+                        "error-dim": "#d7383b",
+                        "surface-container-lowest": "#000000",
+                        "secondary": "#fcc025",
+                        "on-error-container": "#ffa8a3",
+                        "on-primary-fixed": "#000000",
+                        "surface-container-highest": "#1d253a",
+                        "surface-bright": "#232c42",
+                        "secondary-container": "#795900",
+                        "surface": "#080e1c",
+                        "surface-container-low": "#0c1323",
+                        "on-tertiary-container": "#00555a",
+                        "on-background": "#e3e7fc",
+                        "surface-variant": "#1d253a",
+                        "inverse-primary": "#005bc4",
+                        "on-error": "#490006",
+                        "tertiary-fixed": "#00f1fe",
+                        "inverse-on-surface": "#4f5566",
+                        "on-secondary-fixed": "#443100",
+                        "on-primary-container": "#002150",
+                        "outline-variant": "#424858",
+                        "secondary-fixed-dim": "#f6ba1e",
+                        "tertiary-container": "#00f1fe",
+                        "on-tertiary": "#005f64",
+                        "secondary-dim": "#edb210",
+                        "tertiary": "#99f7ff",
+                        "on-primary-fixed-variant": "#002a62",
+                        "error": "#ff716c",
+                        "on-secondary": "#563e00",
+                        "tertiary-fixed-dim": "#00e2ee",
+                        "error-container": "#9f0519",
+                        "primary-container": "#6e9fff",
+                        "on-primary": "#002c66",
+                        "background": "#080e1c",
+                        "tertiary-dim": "#00e2ee",
+                        "surface-container": "#12192a",
+                        "outline": "#707587",
+                        "secondary-fixed": "#ffca51",
+                        "primary-fixed": "#6e9fff",
+                        "primary-dim": "#699cff",
+                        "on-tertiary-fixed-variant": "#006065",
+                        "on-tertiary-fixed": "#004145",
+                        "surface-dim": "#080e1c",
+                        "primary-fixed-dim": "#5391ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #080e1c;
+            color: #e3e7fc;
+            font-family: 'Inter', sans-serif;
+        }
+        .editorial-shadow {
+            box-shadow: 0px 20px 40px rgba(133, 173, 255, 0.08);
+        }
+        .glow-accent {
+            box-shadow: 0 0 12px #3B82F6;
+        }
+        .glass-module {
+            background: rgba(29, 37, 58, 0.6);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col pb-24">
+<!-- TopAppBar -->
+<header class="bg-[#080e1c] text-blue-400 font-['Space_Grotesk'] tracking-tight flex justify-between items-center px-6 h-16 w-full fixed top-0 z-50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#85adff]" style="font-variation-settings: 'FILL' 1;">sports_soccer</span>
+<h1 class="text-2xl font-bold tracking-tighter text-[#85adff] uppercase italic">FIFA ARENA</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:bg-[#1d253a] transition-colors p-2 rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-slate-400">search</span>
+</button>
+<button class="hover:bg-[#1d253a] transition-colors p-2 rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-slate-400">notifications</span>
+</button>
+</div>
+</header>
+<main class="mt-20 px-4 md:px-8 max-w-6xl mx-auto w-full">
+<!-- Page Header -->
+<section class="mb-10">
+<div class="flex flex-col gap-1">
+<h2 class="font-headline text-4xl md:text-5xl font-bold text-on-surface uppercase tracking-tight">
+                    CLASSIFICAÇÃO GERAL
+                </h2>
+<p class="font-label text-sm text-on-surface-variant uppercase tracking-[0.2em]">
+                    Todas as partidas finalizadas, todos os campeonatos
+                </p>
+</div>
+<!-- Podium / Highlights Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+<!-- Top 1 Highlight (Asymmetric/Editorial) -->
+<div class="md:col-span-2 glass-module p-8 rounded-xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+<div class="absolute top-0 right-0 p-6">
+<span class="font-headline text-8xl font-extrabold text-primary/10 select-none">#1</span>
+</div>
+<div>
+<div class="flex items-center gap-4 mb-4">
+<div class="w-16 h-16 rounded-full bg-surface-container-highest border-2 border-primary glow-accent overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="close up professional football player portrait with cinematic lighting and deep blue shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkoirxz5pyFLXIwGhU_MeSIu57DXzwvBtD_DisaOsYDNNxhKFWI_ddYaU3gOq31GTtj8OwoJoyjBhKYsn5_xpSq_ybdHOVhjMo0BSvgpBU5hEH4FuKmt4EqT1MWpLyAxVVBdbLY-3C01iAeRZTxBk1oC6Xm79UKG7wt3FzWpLjv3wvg3VSxIJm0o-FJuX6Wz89UPEfi1JPmetmk-X7Bwc93qqF5-BcWDFXbk9RnQ-EZYkG352kAWAAQxm5RHvhMlAxjNLdYo8SiFU"/>
+</div>
+<div>
+<h3 class="font-headline text-2xl font-bold text-primary italic">Teste1</h3>
+<p class="font-label text-xs uppercase text-on-surface-variant tracking-wider">Ajax</p>
+</div>
+</div>
+</div>
+<div class="flex gap-8">
+<div>
+<p class="font-label text-[10px] uppercase text-on-surface-variant mb-1">Pontos Totais</p>
+<p class="font-headline text-4xl font-bold text-primary tracking-tighter">48 P</p>
+</div>
+<div>
+<p class="font-label text-[10px] uppercase text-on-surface-variant mb-1">Saldo de Gols</p>
+<p class="font-headline text-4xl font-bold text-on-surface tracking-tighter">+24</p>
+</div>
+</div>
+</div>
+<!-- Runner up card -->
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-col justify-center border-l-4 border-secondary/50">
+<div class="flex items-center justify-between mb-4">
+<span class="font-headline text-2xl font-bold text-secondary">#2</span>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+</div>
+<h4 class="font-headline text-xl font-bold">Teste8</h4>
+<p class="font-label text-xs uppercase text-on-surface-variant mb-4">Chelsea</p>
+<div class="flex justify-between items-end">
+<p class="font-headline text-3xl font-bold text-secondary">42 P</p>
+<p class="text-xs text-on-surface-variant font-label">V: 13 / E: 3 / D: 2</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Ranking Table -->
+<section class="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/10">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-highest/50">
+<th class="py-5 px-6 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">#</th>
+<th class="py-5 px-6 font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Jogador</th>
+<th class="py-5 px-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant text-center">P</th>
+<th class="py-5 px-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant text-center">J</th>
+<th class="py-5 px-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant text-center">V</th>
+<th class="py-5 px-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant text-center">E</th>
+<th class="py-5 px-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant text-center">D</th>
+<th class="py-5 px-4 font-label text-[10px] uppercase tracking-widest text-on-surface-variant text-center">SG</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<!-- Row 1 (Highlight active style) -->
+<tr class="group hover:bg-surface-container-highest transition-colors">
+<td class="py-6 px-6 font-headline text-lg font-bold text-primary">01</td>
+<td class="py-6 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-xl">person</span>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Teste1</div>
+<div class="font-label text-[10px] uppercase text-on-surface-variant">Ajax</div>
+</div>
+</div>
+</td>
+<td class="py-6 px-4 text-center font-headline text-xl font-bold text-primary">48</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">18</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">15</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">3</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">0</td>
+<td class="py-6 px-4 text-center font-headline text-lg font-medium text-tertiary">+24</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-surface-container-highest transition-colors">
+<td class="py-6 px-6 font-headline text-lg font-bold text-secondary">02</td>
+<td class="py-6 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-xl">person</span>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Teste8</div>
+<div class="font-label text-[10px] uppercase text-on-surface-variant">Chelsea</div>
+</div>
+</div>
+</td>
+<td class="py-6 px-4 text-center font-headline text-xl font-bold text-secondary">42</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">18</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">13</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">3</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">2</td>
+<td class="py-6 px-4 text-center font-headline text-lg font-medium text-tertiary">+18</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-surface-container-highest transition-colors">
+<td class="py-6 px-6 font-headline text-lg font-bold text-on-surface-variant">03</td>
+<td class="py-6 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-xl">person</span>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Teste2</div>
+<div class="font-label text-[10px] uppercase text-on-surface-variant">Arsenal</div>
+</div>
+</div>
+</td>
+<td class="py-6 px-4 text-center font-headline text-xl font-bold text-on-surface">38</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">18</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">12</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">2</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">4</td>
+<td class="py-6 px-4 text-center font-headline text-lg font-medium text-tertiary">+12</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-surface-container-highest transition-colors">
+<td class="py-6 px-6 font-headline text-lg font-bold text-on-surface-variant">04</td>
+<td class="py-6 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-xl">person</span>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Teste5</div>
+<div class="font-label text-[10px] uppercase text-on-surface-variant">Real Madrid</div>
+</div>
+</div>
+</td>
+<td class="py-6 px-4 text-center font-headline text-xl font-bold text-on-surface">35</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">18</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">11</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">2</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">5</td>
+<td class="py-6 px-4 text-center font-headline text-lg font-medium text-tertiary">+8</td>
+</tr>
+<!-- Row 5 -->
+<tr class="group hover:bg-surface-container-highest transition-colors">
+<td class="py-6 px-6 font-headline text-lg font-bold text-on-surface-variant">05</td>
+<td class="py-6 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-xl">person</span>
+</div>
+<div>
+<div class="font-headline font-bold text-on-surface">Teste3</div>
+<div class="font-label text-[10px] uppercase text-on-surface-variant">Barcelona</div>
+</div>
+</div>
+</td>
+<td class="py-6 px-4 text-center font-headline text-xl font-bold text-on-surface">31</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">18</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">10</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">1</td>
+<td class="py-6 px-4 text-center font-body text-on-surface">7</td>
+<td class="py-6 px-4 text-center font-headline text-lg font-medium text-error-dim">-2</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-[#0c1323]/80 backdrop-blur-xl fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe rounded-t-2xl shadow-[0_-4px_20px_rgba(133,173,255,0.05)]">
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-[#85adff] transition-all" href="#">
+<span class="material-symbols-outlined mb-1">stadium</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest">Arena</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#85adff] drop-shadow-[0_0_8px_#3B82F6] transition-all scale-110" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest">Classificação</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-[#85adff] transition-all" href="#">
+<span class="material-symbols-outlined mb-1">emoji_events</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest">Artilharia</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 hover:text-[#85adff] transition-all" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-['Manrope'] text-[10px] uppercase font-bold tracking-widest">Perfil</span>
+</a>
+</nav>
+</body></html>

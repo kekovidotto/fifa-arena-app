@@ -143,8 +143,18 @@ export interface Scorer {
 
 export interface MatchCardData {
   id: number;
-  homePlayer: { id: number; name: string; teamName: string };
-  awayPlayer: { id: number; name: string; teamName: string };
+  homePlayer: {
+    id: number;
+    name: string;
+    teamName: string;
+    teamLogo?: string | null;
+  };
+  awayPlayer: {
+    id: number;
+    name: string;
+    teamName: string;
+    teamLogo?: string | null;
+  };
   scoreHome: number;
   scoreAway: number;
   status: string;
@@ -170,6 +180,7 @@ interface RawPlayer {
   id: number;
   name: string;
   teamName: string;
+  teamLogo?: string | null;
 }
 
 interface RawGroup {
@@ -193,11 +204,21 @@ export function buildMatchCards(
     return {
       id: m.id,
       homePlayer: home
-        ? { id: home.id, name: home.name, teamName: home.teamName }
-        : { id: 0, name: "?", teamName: "?" },
+        ? {
+            id: home.id,
+            name: home.name,
+            teamName: home.teamName,
+            teamLogo: home.teamLogo ?? null,
+          }
+        : { id: 0, name: "?", teamName: "?", teamLogo: null },
       awayPlayer: away
-        ? { id: away.id, name: away.name, teamName: away.teamName }
-        : { id: 0, name: "?", teamName: "?" },
+        ? {
+            id: away.id,
+            name: away.name,
+            teamName: away.teamName,
+            teamLogo: away.teamLogo ?? null,
+          }
+        : { id: 0, name: "?", teamName: "?", teamLogo: null },
       scoreHome: m.scoreHome,
       scoreAway: m.scoreAway,
       status: m.status,
@@ -269,6 +290,7 @@ export function calculateStandings(
 
   return standings.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
+    if (b.wins !== a.wins) return b.wins - a.wins;
     if (b.goalDifference !== a.goalDifference)
       return b.goalDifference - a.goalDifference;
     return b.goalsFor - a.goalsFor;
