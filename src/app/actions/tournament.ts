@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { eq, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
@@ -137,46 +137,18 @@ export async function generateTournament(playerInputs: PlayerInput[]) {
   return result;
 }
 
-export async function resetMatchScores() {
+export async function resetMatchScores(): Promise<{ success: true }> {
   await requireAdmin();
 
-  const [active] = await db
-    .select({ id: tournaments.id })
-    .from(tournaments)
-    .where(eq(tournaments.status, "ACTIVE"))
-    .limit(1);
-
-  if (!active) {
-    throw new Error("Não há campeonato ativo para resetar placares.");
-  }
-
   await db.transaction(async (tx) => {
-    const tourneyMatches = await tx
-      .select({ id: matches.id, type: matches.type })
-      .from(matches)
-      .where(eq(matches.tournamentId, active.id));
-
-    const matchIds = tourneyMatches.map((m) => m.id);
-    if (matchIds.length > 0) {
-      await tx.delete(goals).where(inArray(goals.matchId, matchIds));
-    }
-
-    const knockoutIds = tourneyMatches
-      .filter((m) => m.type === "KNOCKOUT")
-      .map((m) => m.id);
-    if (knockoutIds.length > 0) {
-      await tx.delete(matches).where(inArray(matches.id, knockoutIds));
-    }
-
+    await tx.delete(goals);
     await tx
       .update(matches)
-      .set({ scoreHome: 0, scoreAway: 0, status: "PENDING" })
-      .where(
-        and(eq(matches.tournamentId, active.id), eq(matches.type, "GROUP")),
-      );
+      .set({ scoreHome: 0, scoreAway: 0, status: "PENDING" });
   });
 
   revalidatePath("/", "layout");
+  return { success: true };
 }
 
 export async function nuclearReset(): Promise<{ success: true }> {

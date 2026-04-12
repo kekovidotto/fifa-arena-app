@@ -40,10 +40,10 @@ export function DangerZone() {
                 Resetar Apenas Placares
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                No campeonato <strong className="text-white">ativo</strong>,
-                zera placares e remove gols; partidas de mata-mata são apagadas
-                e a fase de grupos volta a ficar pendente. Usuários e troféus
-                não são alterados.
+                Remove todos os gols e zera{" "}
+                <strong className="text-white">todas</strong> as partidas
+                (placar 0×0, status pendente), em qualquer torneio. Usuários e
+                troféus não são alterados.
               </p>
             </div>
             <button
@@ -98,10 +98,16 @@ function ConfirmScoreResetModal({ onClose }: { onClose: () => void }) {
 
   function handleConfirm() {
     startTransition(async () => {
-      await resetMatchScores();
-      toast.success("Placares resetados com sucesso!");
-      onClose();
-      router.refresh();
+      try {
+        await resetMatchScores();
+        toast.success("Placares resetados com sucesso!");
+        onClose();
+        router.refresh();
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Não foi possível resetar placares.",
+        );
+      }
     });
   }
 
@@ -110,8 +116,8 @@ function ConfirmScoreResetModal({ onClose }: { onClose: () => void }) {
       <AlertTriangle className="mx-auto mb-3 size-12 text-amber-400" />
       <h3 className="text-lg font-bold text-white">Resetar Placares?</h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        No torneio ativo: placares zerados, gols removidos e mata-mata apagado.
-        Fase de grupos volta como pendente. Fora do campeonato ativo, nada muda.
+        Todas as partidas voltam a 0×0 e ficam pendentes; todos os registros de
+        gols são apagados. Funciona mesmo sem campeonato ativo.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.
