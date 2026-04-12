@@ -1,14 +1,13 @@
 import { asc, inArray } from "drizzle-orm";
 
-import { StandingsContent } from "@/components/standings/standings-content";
-import { db } from "@/db";
-import { groups, matches, players, user } from "@/db/schema";
-import { calculateStandings } from "@/lib/tournament-utils";
-
 import type {
   StandingRow,
   StandingsGroupBlock,
 } from "@/components/standings/standings-content";
+import { StandingsContent } from "@/components/standings/standings-content";
+import { db } from "@/db";
+import { groups, matches, players, user } from "@/db/schema";
+import { calculateStandings } from "@/lib/tournament-utils";
 
 export default async function ClassificacaoPage() {
   const [allGroups, allPlayers, allMatches] = await Promise.all([
