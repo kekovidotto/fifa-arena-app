@@ -75,7 +75,7 @@ export default async function DashboardPage() {
   const viewerIsAdmin = isAdmin(session?.user?.email);
 
   return (
-    <div className="flex min-h-dvh flex-col pb-8">
+    <div className="flex min-h-dvh flex-col bg-m3-background font-body text-on-surface selection:bg-m3-primary selection:text-on-primary">
       <DashboardContent
         groups={groupsData}
         upcomingMatches={upcomingMatches}

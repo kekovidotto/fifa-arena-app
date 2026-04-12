@@ -53,6 +53,62 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* FIFA Arena dashboard palette (src/app/newLayout/newDashboard.html) — m3-* evita colisão com tokens shadcn primary/secondary/background */
+  --font-headline: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-label: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --color-m3-primary: #85adff;
+  --color-m3-secondary: #fcc025;
+  --color-m3-background: #080e1c;
+  --color-m3-error: #ff716c;
+  --color-on-error: #490006;
+  --color-surface-tint: #85adff;
+  --color-error-container: #9f0519;
+  --color-primary-fixed-dim: #5391ff;
+  --color-primary-container: #6e9fff;
+  --color-surface-container-high: #181f32;
+  --color-on-tertiary-fixed-variant: #006065;
+  --color-on-surface: #e3e7fc;
+  --color-secondary-fixed: #ffca51;
+  --color-on-error-container: #ffa8a3;
+  --color-tertiary-fixed: #00f1fe;
+  --color-tertiary-dim: #00e2ee;
+  --color-on-background: #e3e7fc;
+  --color-inverse-on-surface: #4f5566;
+  --color-surface-bright: #232c42;
+  --color-inverse-primary: #005bc4;
+  --color-on-secondary-fixed-variant: #684c00;
+  --color-on-primary-fixed-variant: #002a62;
+  --color-secondary-fixed-dim: #f6ba1e;
+  --color-primary-fixed: #6e9fff;
+  --color-surface-container-low: #0c1323;
+  --color-on-primary-fixed: #000000;
+  --color-secondary-container: #795900;
+  --color-surface-container-lowest: #000000;
+  --color-tertiary-container: #00f1fe;
+  --color-on-tertiary: #005f64;
+  --color-secondary-dim: #edb210;
+  --color-surface-container: #12192a;
+  --color-on-surface-variant: #a5aabe;
+  --color-surface-dim: #080e1c;
+  --color-on-secondary-fixed: #443100;
+  --color-inverse-surface: #faf8ff;
+  --color-on-secondary-container: #fff6ed;
+  --color-surface-container-highest: #1d253a;
+  --color-outline-variant: #424858;
+  --color-outline: #707587;
+  --color-tertiary-fixed-dim: #00e2ee;
+  --color-surface: #080e1c;
+  --color-on-primary: #002c66;
+  --color-on-primary-container: #002150;
+  --color-surface-variant: #1d253a;
+  --color-on-secondary: #563e00;
+  --color-error-dim: #d7383b;
+  --color-primary-dim: #699cff;
+  --color-on-tertiary-fixed: #004145;
+  --color-on-tertiary-container: #00555a;
+  --color-tertiary: #99f7ff;
 }
 
 :root {
@@ -98,6 +154,52 @@
   box-shadow:
     0 0 15px rgba(34, 197, 94, 0.08),
     0 0 30px rgba(59, 130, 246, 0.05);
+}
+
+/* Dashboard template (newDashboard.html) */
+.arena-glass-card {
+  background: rgba(29, 37, 58, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(66, 72, 88, 0.1);
+}
+
+.arena-neon-glow {
+  box-shadow: 0 0 12px #3b82f6;
+}
+
+/* Ícones por ligaduras: precisam desta fonte (carregada no layout via <link>) */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined", sans-serif !important;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1em;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  -webkit-font-smoothing: antialiased;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.active-nav-glow {
+  box-shadow: 0 0 15px -3px rgba(133, 173, 255, 0.3);
 }
 
 .neon-input {

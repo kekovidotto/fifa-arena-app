@@ -1,16 +1,15 @@
 "use client";
 
-import { LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
+import { AdminGuard } from "@/components/admin-guard";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
@@ -20,42 +19,48 @@ import { cn } from "@/lib/utils";
 type NavItem = {
   href: string;
   label: string;
-  emoji: string;
+  materialIcon: string;
   match: (path: string) => boolean;
 };
 
-const publicNav: NavItem[] = [
+const generalNav: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    emoji: "🏠",
+    materialIcon: "dashboard",
     match: (p) => p === "/dashboard",
+  },
+  {
+    href: "/matches",
+    label: "Partidas",
+    materialIcon: "calendar_month",
+    match: (p) => p === "/matches",
   },
   {
     href: "/classificacao",
     label: "Classificação Geral",
-    emoji: "📊",
+    materialIcon: "leaderboard",
     match: (p) => p === "/classificacao" || p === "/standings",
   },
   {
     href: "/artilheria",
     label: "Artilharia",
-    emoji: "⚽",
+    materialIcon: "sports_soccer",
     match: (p) => p === "/artilheria" || p === "/top-scorers",
   },
   {
     href: "/players",
     label: "Hall da Fama",
-    emoji: "👥",
+    materialIcon: "workspace_premium",
     match: (p) => p === "/players",
   },
 ];
 
-function profileNav(userId: string): NavItem {
+function profileNavItem(userId: string): NavItem {
   return {
     href: `/profile/${userId}`,
     label: "Meu Perfil",
-    emoji: "👤",
+    materialIcon: "person",
     match: (p) => p === `/profile/${userId}`,
   };
 }
@@ -63,19 +68,36 @@ function profileNav(userId: string): NavItem {
 const adminNav: NavItem[] = [
   {
     href: "/register",
-    label: "Registrar Jogadores/Torneio",
-    emoji: "➕",
+    label: "Registrar Jogadores",
+    materialIcon: "group_add",
     match: (p) => p === "/register",
   },
   {
     href: "/settings",
     label: "Configurações / Zona de Perigo",
-    emoji: "⚙️",
+    materialIcon: "settings_suggest",
     match: (p) => p === "/settings",
   },
 ];
 
-function NavLinkRow({
+function MaterialSymbol({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn("select-none", className, "material-symbols-outlined")}
+      aria-hidden
+    >
+      {name}
+    </span>
+  );
+}
+
+function SidebarNavLink({
   item,
   pathname,
   onNavigate,
@@ -91,33 +113,38 @@ function NavLinkRow({
         href={item.href}
         onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition-all",
+          "flex items-center gap-4 rounded-xl px-4 py-3 font-headline text-sm font-medium uppercase tracking-wider transition-all",
           active
-            ? "border-neon-green/50 bg-neon-green/10 text-white shadow-[0_0_20px_rgba(34,197,94,0.25)]"
-            : "border-white/5 bg-white/[0.03] text-white/80 hover:border-white/15 hover:bg-white/[0.06]",
+            ? "active-nav-glow border-l-4 border-m3-primary bg-linear-to-r from-m3-primary/20 to-transparent text-m3-primary"
+            : "border-l-4 border-transparent bg-surface-container text-on-surface/70 hover:border-m3-primary hover:text-m3-primary",
         )}
       >
-        <span className="text-lg" aria-hidden>
-          {item.emoji}
-        </span>
-        {item.label}
+        <MaterialSymbol name={item.materialIcon} className="text-[22px]" />
+        <span className="truncate">{item.label}</span>
       </Link>
     </SheetClose>
   );
 }
 
-function LogoutNavButton({ onClose }: { onClose: () => void }) {
+function NavSectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-3 px-4 font-label text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">
+      {children}
+    </h3>
+  );
+}
+
+function LogoutFooterButton({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
       disabled={pending}
       className={cn(
-        "flex h-auto w-full items-center justify-start gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition-all",
-        "border-red-500/35 bg-red-500/10 text-red-100 hover:border-red-400/50 hover:bg-red-500/18",
+        "flex w-full items-center justify-center gap-3 rounded-xl border border-m3-error/30 bg-m3-error/10 py-3.5 font-headline text-sm font-bold uppercase tracking-wider text-m3-error transition-colors",
+        "hover:border-m3-error/50 hover:bg-m3-error/16 active:scale-[0.99] disabled:opacity-50",
       )}
       onClick={() => {
         onClose();
@@ -133,9 +160,9 @@ function LogoutNavButton({ onClose }: { onClose: () => void }) {
         });
       }}
     >
-      <LogOut className="size-4 shrink-0 opacity-90" aria-hidden />
+      <MaterialSymbol name="logout" className="text-[22px] text-m3-error" />
       Sair
-    </Button>
+    </button>
   );
 }
 
@@ -152,7 +179,16 @@ export function AppChrome({
   const { data: session } = authClient.useSession();
   const [open, setOpen] = useState(false);
 
-  const isLoggedIn = Boolean(session?.user?.id ?? viewerUserId);
+  const user = session?.user;
+  const userId = user?.id ?? viewerUserId ?? null;
+  const displayName =
+    user?.name?.trim() ||
+    user?.email?.split("@")[0] ||
+    "Jogador";
+  const email = user?.email ?? "";
+  const image = user?.image;
+
+  const isLoggedIn = Boolean(userId);
   const isAuthRoute =
     pathname === "/login" ||
     pathname === "/signup" ||
@@ -171,20 +207,20 @@ export function AppChrome({
   if (!isLoggedIn) {
     return (
       <div className="flex min-h-dvh flex-col">
-        <header className="sticky top-0 z-60 flex h-14 shrink-0 items-center border-b border-white/10 bg-[#020617]/80 px-2 backdrop-blur-xl">
+        <header className="sticky top-0 z-60 flex h-16 shrink-0 items-center border-b border-outline-variant/10 bg-m3-background px-4 shadow-[0_0_12px_rgba(133,173,255,0.1)]">
           <div className="flex w-full items-center gap-2">
             <div className="w-12 shrink-0" aria-hidden />
             <div className="min-w-0 flex-1 text-center">
-              <span className="text-sm font-black tracking-widest text-white/90">
+              <span className="font-headline text-sm font-bold tracking-tight text-m3-primary">
                 FIFA ARENA
               </span>
             </div>
-            <div className="flex w-[5.5rem] shrink-0 justify-end">
+            <div className="flex w-22 shrink-0 justify-end">
               <Button
                 asChild
                 size="sm"
                 variant="outline"
-                className="border-white/20 bg-white/5 font-semibold text-white hover:bg-white/10"
+                className="border-outline-variant/30 bg-surface-container text-on-surface hover:bg-surface-container-high"
               >
                 <Link href="/login">Entrar</Link>
               </Button>
@@ -198,105 +234,153 @@ export function AppChrome({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-60 flex h-14 shrink-0 items-center border-b border-white/10 bg-[#020617]/80 px-2 backdrop-blur-xl">
-        <div className="flex w-full items-center gap-2">
-          <div className="flex w-12 shrink-0 justify-start">
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/10"
-                  aria-label="Abrir menu"
-                >
-                  <Menu className="size-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                showCloseButton={false}
-                className="w-[min(100vw,320px)] border-white/10 bg-[#070b14]/92 p-0 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#070b14]/85"
+      <header className="sticky top-0 z-60 flex h-16 shrink-0 items-center justify-between border-b border-outline-variant/10 bg-m3-background px-4 shadow-[0_0_12px_rgba(133,173,255,0.1)]">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="rounded-lg p-2 text-m3-primary transition-colors hover:bg-surface-container-highest active:scale-95"
+                aria-label="Abrir menu"
               >
-                <SheetHeader className="border-b border-white/10 px-4 py-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <SheetTitle className="text-left text-base font-black tracking-wider text-white">
-                      FIFA ARENA
-                    </SheetTitle>
-                    <SheetClose asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="shrink-0 text-white/70 hover:bg-white/10 hover:text-white"
-                        aria-label="Fechar menu"
-                      >
-                        <X className="size-5" />
-                      </Button>
-                    </SheetClose>
-                  </div>
-                  <p className="text-left text-xs text-muted-foreground">
-                    Navegação rápida
-                  </p>
-                </SheetHeader>
+                <MaterialSymbol name="menu" className="text-[26px]" />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              showCloseButton={false}
+              className={cn(
+                "h-full w-[80vw] max-w-[20rem] gap-0 border-r border-outline-variant/15 bg-m3-background p-0 sm:max-w-none sm:w-72",
+                "rounded-none rounded-r-2xl shadow-[20px_0px_40px_rgba(8,14,28,0.5)]",
+              )}
+            >
+              <SheetTitle className="sr-only">Menu de navegação FIFA Arena</SheetTitle>
+              <div className="flex h-full flex-col overflow-hidden">
+                <div className="flex shrink-0 items-center justify-between px-5 pb-2 pt-5">
+                  <span className="font-headline text-lg font-bold tracking-tight text-m3-primary">
+                    FIFA ARENA
+                  </span>
+                  <SheetClose asChild>
+                    <button
+                      type="button"
+                      className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-on-surface"
+                      aria-label="Fechar menu"
+                    >
+                      <MaterialSymbol name="close" className="text-[22px]" />
+                    </button>
+                  </SheetClose>
+                </div>
 
-                <nav className="flex flex-col gap-2 overflow-y-auto p-4 pb-8">
-                  <p className="mb-1 text-[10px] font-bold tracking-widest text-neon-blue/90">
-                    GERAL
-                  </p>
-                  {publicNav.map((item) => (
-                    <NavLinkRow
-                      key={item.href}
-                      item={item}
-                      pathname={pathname}
-                      onNavigate={() => setOpen(false)}
-                    />
-                  ))}
-
-                  {viewerUserId && (
-                    <>
-                      <p className="mb-1 mt-4 text-[10px] font-bold tracking-widest text-muted-foreground">
-                        CONTA
-                      </p>
-                      <NavLinkRow
-                        item={profileNav(viewerUserId)}
-                        pathname={pathname}
-                        onNavigate={() => setOpen(false)}
+                <div className="shrink-0 border-b border-outline-variant/15 px-5 pb-6 pt-2">
+                  <div className="flex items-start gap-4">
+                    <div className="relative shrink-0">
+                      <div
+                        className="pointer-events-none absolute inset-0 rounded-2xl bg-m3-primary/20 blur-xl"
+                        aria-hidden
                       />
-                      <LogoutNavButton onClose={() => setOpen(false)} />
-                    </>
-                  )}
-
-                  {viewerIsAdmin && (
-                    <>
-                      <p className="mb-1 mt-4 text-[10px] font-bold tracking-widest text-amber-400/90">
-                        ÁREA DO ADMIN
+                      {image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={image}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                          className="relative size-16 rounded-2xl border border-m3-primary/30 object-cover"
+                        />
+                      ) : (
+                        <div className="relative flex size-16 items-center justify-center rounded-2xl border border-m3-primary/30 bg-surface-container-highest font-headline text-lg font-bold text-m3-primary">
+                          {displayName.slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 pt-1">
+                      <p className="truncate font-headline text-base font-bold uppercase tracking-tight text-m3-primary">
+                        {displayName}
                       </p>
-                      {adminNav.map((item) => (
-                        <NavLinkRow
+                      {email ? (
+                        <p className="mt-1 truncate font-body text-xs text-on-surface-variant">
+                          {email}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <nav className="min-h-0 flex-1 space-y-8 overflow-y-auto px-3 py-6">
+                  <div>
+                    <NavSectionTitle>Geral</NavSectionTitle>
+                    <div className="space-y-1.5">
+                      {generalNav.map((item) => (
+                        <SidebarNavLink
                           key={item.href}
                           item={item}
                           pathname={pathname}
                           onNavigate={() => setOpen(false)}
                         />
                       ))}
-                    </>
-                  )}
+                    </div>
+                  </div>
+
+                  {userId ? (
+                    <div>
+                      <NavSectionTitle>Conta</NavSectionTitle>
+                      <div className="space-y-1.5">
+                        <SidebarNavLink
+                          item={profileNavItem(userId)}
+                          pathname={pathname}
+                          onNavigate={() => setOpen(false)}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {viewerIsAdmin ? (
+                    <AdminGuard fallback={null} compactPending>
+                      <div>
+                        <NavSectionTitle>Área do admin</NavSectionTitle>
+                        <div className="space-y-1.5">
+                          {adminNav.map((item) => (
+                            <SidebarNavLink
+                              key={item.href}
+                              item={item}
+                              pathname={pathname}
+                              onNavigate={() => setOpen(false)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </AdminGuard>
+                  ) : null}
                 </nav>
-              </SheetContent>
-            </Sheet>
-          </div>
 
-          <div className="min-w-0 flex-1 text-center">
-            <Link
-              href="/dashboard"
-              className="text-sm font-black tracking-widest text-white/90"
-            >
-              FIFA ARENA
-            </Link>
-          </div>
+                <div className="shrink-0 border-t border-outline-variant/10 p-5">
+                  <LogoutFooterButton onClose={() => setOpen(false)} />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
 
-          <div className="w-12 shrink-0" aria-hidden />
+          <Link
+            href="/dashboard"
+            className="truncate font-headline text-base font-bold tracking-tight text-m3-primary"
+          >
+            FIFA ARENA
+          </Link>
+        </div>
+
+        <div className="shrink-0 pl-2">
+          {image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={image}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="size-10 rounded-full border-2 border-m3-primary/20 object-cover p-0.5"
+            />
+          ) : (
+            <div className="flex size-10 items-center justify-center rounded-full border-2 border-m3-primary/20 bg-surface-container-highest font-headline text-sm font-bold text-m3-primary">
+              {displayName.slice(0, 1).toUpperCase()}
+            </div>
+          )}
         </div>
       </header>
 

@@ -1,30 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  BarChart3,
-  CalendarDays,
-  CheckCircle2,
-  ChevronDown,
-  Crown,
-  Flag,
-  Loader2,
-  Plus,
-  Settings,
-  Swords,
-  Trophy,
-  Zap,
-} from "lucide-react";
+import { BarChart3, CalendarDays, Loader2, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { generateKnockoutPhase } from "@/app/actions/knockout";
 import { finalizeTournament } from "@/app/actions/tournament-finalize";
 import { AdminGuard } from "@/components/admin-guard";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +22,9 @@ import {
   type GroupData,
   type MatchCardData,
   QUALIFYING_POSITIONS,
+  STAGE_LABELS,
 } from "@/lib/tournament-utils";
+import { cn } from "@/lib/utils";
 
 interface DashboardContentProps {
   groups: GroupData[];
@@ -63,6 +50,31 @@ const fadeUp = {
   },
 };
 
+function MaterialSymbol({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn("select-none", className, "material-symbols-outlined")}
+      aria-hidden
+    >
+      {name}
+    </span>
+  );
+}
+
+function initialsFromName(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase() || "?";
+}
+
 export function DashboardContent({
   groups,
   upcomingMatches,
@@ -72,108 +84,102 @@ export function DashboardContent({
   canFinalizeTournament,
   viewerIsAdmin,
 }: DashboardContentProps) {
+  const [activeGroupId, setActiveGroupId] = useState<number | null>(
+    groups[0]?.id ?? null,
+  );
+  const activeGroup =
+    groups.find((g) => g.id === activeGroupId) ?? groups[0] ?? null;
+
   return (
     <motion.div
       variants={stagger}
       initial="hidden"
       animate="show"
-      className="mx-auto w-full max-w-lg px-4"
+      className="mx-auto w-full max-w-7xl space-y-12 px-4 pb-28 pt-2 md:px-8 md:pb-16"
     >
-      {/* Admin bar */}
       {viewerIsAdmin && (
-        <motion.div
+        <motion.section
           variants={fadeUp}
-          className="mb-4 mt-2 flex flex-col gap-3 rounded-xl border border-amber-400/30 bg-amber-500/[0.07] p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-wrap items-center justify-between gap-4"
         >
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[10px] font-black tracking-widest text-amber-300">
-              ADMIN
-            </span>
-            <span className="text-xs text-amber-200/80">Barra rápida</span>
+          <div className="space-y-1">
+            <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">
+              Console de Administração
+            </p>
+            <h2 className="font-headline text-2xl font-bold tracking-tight text-on-surface md:text-3xl">
+              Painel de Controle
+            </h2>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/register"
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-amber-400/35 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-200 transition-colors hover:bg-amber-500/25 sm:flex-none"
+              className="arena-neon-glow flex items-center gap-2 rounded-xl bg-linear-to-r from-m3-primary to-primary-container px-6 py-3 font-label text-xs font-bold uppercase tracking-widest text-on-primary-container transition-all active:scale-95"
             >
-              <Plus className="size-3.5" />
+              <MaterialSymbol name="add_circle" className="text-sm" />
               Novo registro
             </Link>
             <Link
               href="/settings"
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold text-white/90 transition-colors hover:bg-white/10 sm:flex-none"
+              className="flex items-center gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-highest px-6 py-3 font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant transition-colors hover:text-m3-primary active:scale-95"
             >
-              <Settings className="size-3.5" />
+              <MaterialSymbol name="settings" className="text-sm" />
               Configurações
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9 gap-1 border-white/20 bg-white/5 text-xs font-bold text-white hover:bg-white/10"
+                  className="flex items-center gap-2 rounded-xl border border-outline-variant/15 bg-surface-container-highest p-3 text-on-surface-variant transition-colors hover:text-m3-primary active:scale-95"
+                  aria-label="Mais ações"
                 >
-                  Mais
-                  <ChevronDown className="size-3.5 opacity-70" />
-                </Button>
+                  <MaterialSymbol name="more_horiz" className="text-sm" />
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="min-w-[200px] border-white/10 bg-[#0a0f1a] text-white"
+                className="min-w-[200px] border-outline-variant/20 bg-surface-container-highest text-on-surface"
               >
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                <DropdownMenuLabel className="font-label text-xs text-on-surface-variant">
                   Ações rápidas
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-white/10" />
-                <DropdownMenuItem asChild className="focus:bg-white/10">
+                <DropdownMenuSeparator className="bg-outline-variant/20" />
+                <DropdownMenuItem asChild className="focus:bg-m3-primary/10">
                   <Link href="/matches" className="cursor-pointer">
-                    <CalendarDays className="mr-2 size-4" />
+                    <CalendarDays className="mr-2 size-4 opacity-80" />
                     Partidas
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="focus:bg-white/10">
+                <DropdownMenuItem asChild className="focus:bg-m3-primary/10">
                   <Link href="/classificacao" className="cursor-pointer">
-                    <BarChart3 className="mr-2 size-4" />
+                    <BarChart3 className="mr-2 size-4 opacity-80" />
                     Classificação geral
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="focus:bg-white/10">
+                <DropdownMenuItem asChild className="focus:bg-m3-primary/10">
                   <Link href="/artilheria" className="cursor-pointer">
-                    <Trophy className="mr-2 size-4" />
+                    <Trophy className="mr-2 size-4 opacity-80" />
                     Artilharia
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </motion.div>
+        </motion.section>
       )}
 
-      {/* Header */}
-      <motion.header variants={fadeUp} className="py-6 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <Trophy className="size-6 text-neon-green" />
-          <h1 className="text-xl font-black tracking-widest text-white">
-            FIFA ARENA
-          </h1>
-        </div>
-        <p className="text-xs tracking-[0.3em] text-neon-blue">
-          COPA DO MUNDO
-        </p>
-      </motion.header>
-
-      {/* Top Action Section */}
-      <motion.section variants={fadeUp} className="mb-6">
+      <motion.section variants={fadeUp} className="space-y-6">
         {groupPhaseComplete && !knockoutExists ? (
           <AdminGuard
             fallback={
-              <div className="glass-card rounded-xl p-6 text-center">
-                <CheckCircle2 className="mx-auto mb-3 size-10 text-neon-green" />
-                <p className="text-lg font-bold text-white">
+              <div className="arena-glass-card rounded-2xl border border-outline-variant/10 p-8 text-center">
+                <MaterialSymbol
+                  name="check_circle"
+                  className="mx-auto mb-3 text-4xl text-m3-primary"
+                />
+                <p className="font-headline text-lg font-bold text-on-surface">
                   Fase de Grupos Finalizada!
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-2 font-body text-sm text-on-surface-variant">
                   Aguardando o administrador gerar o mata-mata.
                 </p>
               </div>
@@ -190,114 +196,170 @@ export function DashboardContent({
         ) : knockoutExists ? (
           <TournamentComplete />
         ) : (
-          <div className="glass-card rounded-xl p-6 text-center">
-            <CheckCircle2 className="mx-auto mb-3 size-10 text-neon-green" />
-            <p className="font-bold text-white">
+          <div className="arena-glass-card rounded-2xl border border-outline-variant/10 p-8 text-center">
+            <MaterialSymbol
+              name="check_circle"
+              className="mx-auto mb-3 text-4xl text-m3-primary"
+            />
+            <p className="font-headline font-bold text-on-surface">
               Todas as partidas foram realizadas!
             </p>
           </div>
         )}
       </motion.section>
 
-      {/* Bracket Link */}
       {knockoutExists && (
-        <motion.div variants={fadeUp} className="mb-6">
+        <motion.div variants={fadeUp}>
           <Link
             href="/knockout"
-            className="neon-button-blue flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold tracking-wider"
+            className="arena-neon-glow flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-m3-primary to-primary-container py-4 font-headline text-sm font-bold uppercase tracking-wider text-on-primary-container transition-transform active:scale-[0.98]"
           >
-            <Crown className="size-4" />
-            VER CHAVEAMENTO
+            <MaterialSymbol name="emoji_events" className="text-xl" />
+            Ver chaveamento
           </Link>
         </motion.div>
       )}
 
       {canFinalizeTournament && (
-        <motion.div variants={fadeUp} className="mb-6">
+        <motion.div variants={fadeUp}>
           <AdminGuard>
             <FinalizeTournamentCTA />
           </AdminGuard>
         </motion.div>
       )}
 
-      {/* Group Standings */}
-      <section className="space-y-4 pb-4">
-        <motion.h2
-          variants={fadeUp}
-          className="text-sm font-semibold tracking-wider text-muted-foreground"
-        >
-          CLASSIFICAÇÃO DOS GRUPOS
-        </motion.h2>
-
-        {groups.map((group) => (
-          <motion.div
-            key={group.id}
-            variants={fadeUp}
-            className="glass-card overflow-hidden rounded-xl"
-          >
-            <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
-              <span className="flex size-6 items-center justify-center rounded bg-neon-green/10 text-xs font-bold text-neon-green">
-                {group.name.replace("Grupo ", "")}
-              </span>
-              <h3 className="text-sm font-bold text-white">{group.name}</h3>
+      {groups.length > 0 && activeGroup && (
+        <motion.section variants={fadeUp} className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-1 rounded-full bg-m3-secondary" />
+              <h3 className="font-headline text-xl font-bold uppercase tracking-tight text-on-surface">
+                Classificação dos Grupos
+              </h3>
             </div>
+            <div className="flex flex-wrap gap-2 rounded-xl bg-surface-container-low p-1">
+              {groups.map((g) => {
+                const active = g.id === activeGroup.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setActiveGroupId(g.id)}
+                    className={cn(
+                      "rounded-lg px-4 py-2 font-label text-xs font-bold uppercase tracking-widest transition-colors",
+                      active
+                        ? "bg-surface-container-highest text-m3-primary"
+                        : "text-on-surface-variant hover:text-on-surface",
+                    )}
+                  >
+                    {g.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
+          <div className="arena-glass-card overflow-hidden rounded-2xl border border-outline-variant/10">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[320px] text-xs">
+              <table className="w-full min-w-[640px] border-collapse text-left">
                 <thead>
-                  <tr className="text-muted-foreground">
-                    <th className="w-8 py-2 pl-4 text-left">#</th>
-                    <th className="py-2 text-left">Jogador</th>
-                    <th className="w-8 py-2 text-center">P</th>
-                    <th className="w-8 py-2 text-center">J</th>
-                    <th className="w-8 py-2 text-center">V</th>
-                    <th className="w-8 py-2 text-center">E</th>
-                    <th className="w-8 py-2 text-center">D</th>
-                    <th className="w-10 py-2 pr-4 text-center">SG</th>
+                  <tr className="bg-surface-container-low/50">
+                    <th className="px-6 py-5 font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      #
+                    </th>
+                    <th className="px-6 py-5 font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      Jogador
+                    </th>
+                    <th className="px-4 py-5 text-center font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      P
+                    </th>
+                    <th className="px-4 py-5 text-center font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      J
+                    </th>
+                    <th className="px-4 py-5 text-center font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      V
+                    </th>
+                    <th className="px-4 py-5 text-center font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      E
+                    </th>
+                    <th className="px-4 py-5 text-center font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      D
+                    </th>
+                    <th className="px-4 py-5 text-center font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+                      SG
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
-                  {group.standings.map((s, pos) => {
+                <tbody className="divide-y divide-outline-variant/5">
+                  {activeGroup.standings.map((s, pos) => {
                     const qualified = pos < QUALIFYING_POSITIONS;
                     return (
                       <tr
                         key={s.playerId}
-                        className={`border-t border-white/5 ${qualified ? "bg-neon-green/5" : ""}`}
+                        className="transition-colors hover:bg-m3-primary/5"
                       >
-                        <td className="py-2.5 pl-4">
-                          <PositionBadge
-                            pos={pos + 1}
-                            qualified={qualified}
-                          />
+                        <td className="px-6 py-4">
+                          <PositionBadge pos={pos + 1} />
                         </td>
-                        <td className="py-2.5">
-                          <p
-                            className={`font-semibold ${qualified ? "text-white" : "text-white/60"}`}
-                          >
-                            {s.playerName}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {s.teamName}
-                          </p>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={cn(
+                                "flex size-10 shrink-0 items-center justify-center rounded-full border-2 p-0.5 font-headline text-xs font-bold text-on-surface",
+                                pos === 0 &&
+                                  "border-m3-secondary/50 bg-m3-secondary/10",
+                                pos === 1 &&
+                                  "border-m3-primary/50 bg-m3-primary/10",
+                                pos > 1 && "border-outline-variant/30",
+                              )}
+                            >
+                              <span className="leading-none">
+                                {initialsFromName(s.playerName)}
+                              </span>
+                            </div>
+                            <div className="flex min-w-0 flex-col">
+                              <span className="font-headline text-sm font-bold text-on-surface">
+                                {s.playerName}
+                              </span>
+                              <span
+                                className={cn(
+                                  "font-label text-[10px] font-bold uppercase tracking-widest",
+                                  qualified
+                                    ? pos === 0
+                                      ? "text-m3-secondary"
+                                      : "text-m3-primary"
+                                    : "text-on-surface-variant",
+                                )}
+                              >
+                                {qualified ? "Promoção" : "Permanência"}
+                              </span>
+                              <span className="truncate font-body text-[10px] text-on-surface-variant/80">
+                                {s.teamName}
+                              </span>
+                            </div>
+                          </div>
                         </td>
                         <td
-                          className={`py-2.5 text-center font-bold ${qualified ? "text-neon-green" : "text-white/60"}`}
+                          className={cn(
+                            "px-4 py-4 text-center font-headline text-sm font-bold",
+                            qualified ? "text-m3-primary" : "text-on-surface-variant",
+                          )}
                         >
                           {s.points}
                         </td>
-                        <td className="py-2.5 text-center text-muted-foreground">
+                        <td className="px-4 py-4 text-center font-headline text-sm font-medium text-on-surface">
                           {s.played}
                         </td>
-                        <td className="py-2.5 text-center text-muted-foreground">
+                        <td className="px-4 py-4 text-center font-headline text-sm font-medium text-on-surface">
                           {s.wins}
                         </td>
-                        <td className="py-2.5 text-center text-muted-foreground">
+                        <td className="px-4 py-4 text-center font-headline text-sm font-medium text-on-surface">
                           {s.draws}
                         </td>
-                        <td className="py-2.5 text-center text-muted-foreground">
+                        <td className="px-4 py-4 text-center font-headline text-sm font-medium text-on-surface">
                           {s.losses}
                         </td>
-                        <td className="py-2.5 pr-4 text-center">
+                        <td className="px-4 py-4 text-center font-headline text-sm font-medium">
                           <GoalDifference value={s.goalDifference} />
                         </td>
                       </tr>
@@ -306,9 +368,17 @@ export function DashboardContent({
                 </tbody>
               </table>
             </div>
-          </motion.div>
-        ))}
-      </section>
+          </div>
+        </motion.section>
+      )}
+
+      <Link
+        href="/matches"
+        className="arena-neon-glow fixed bottom-6 right-4 z-40 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-m3-primary to-primary-container text-on-primary-container transition-transform active:scale-90 sm:bottom-8 sm:right-8"
+        aria-label="Ver todas as partidas"
+      >
+        <MaterialSymbol name="sports_soccer" className="text-3xl" />
+      </Link>
     </motion.div>
   );
 }
@@ -332,14 +402,16 @@ function FinalizeTournamentCTA() {
   }
 
   return (
-    <div
-      className="glass-card overflow-hidden rounded-xl"
-      style={{ borderColor: "rgba(251, 191, 36, 0.25)" }}
-    >
-      <div className="p-5 text-center">
-        <Flag className="mx-auto mb-2 size-9 text-amber-400" />
-        <p className="text-sm font-bold text-white">Encerrar campeonato</p>
-        <p className="mt-1 text-xs text-muted-foreground">
+    <div className="arena-glass-card overflow-hidden rounded-2xl border border-m3-secondary/30">
+      <div className="p-6 text-center">
+        <MaterialSymbol
+          name="flag"
+          className="mx-auto mb-2 text-4xl text-m3-secondary"
+        />
+        <p className="font-headline text-sm font-bold text-on-surface">
+          Encerrar campeonato
+        </p>
+        <p className="mt-1 font-body text-xs text-on-surface-variant">
           Registra campeão, vice, 3º lugar e artilheiro nos perfis vinculados.
         </p>
       </div>
@@ -348,17 +420,17 @@ function FinalizeTournamentCTA() {
           type="button"
           onClick={handleFinalize}
           disabled={isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/40 bg-amber-500/10 py-3.5 text-sm font-black tracking-widest text-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.15)] transition-all active:scale-[0.98] disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-m3-secondary/50 bg-m3-secondary/15 py-3.5 font-headline text-sm font-black uppercase tracking-widest text-m3-secondary shadow-[0_0_20px_rgba(252,192,37,0.15)] transition-all active:scale-[0.98] disabled:opacity-50"
         >
           {isPending ? (
             <>
               <Loader2 className="size-5 animate-spin" />
-              FINALIZANDO...
+              Finalizando…
             </>
           ) : (
             <>
-              <Trophy className="size-5" />
-              FINALIZAR CAMPEONATO
+              <MaterialSymbol name="emoji_events" className="text-xl" />
+              Finalizar campeonato
             </>
           )}
         </button>
@@ -382,34 +454,36 @@ function GenerateKnockoutCTA() {
     <motion.div
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      className="glass-card overflow-hidden rounded-xl"
-      style={{ borderColor: "rgba(34, 197, 94, 0.2)" }}
+      className="arena-glass-card overflow-hidden rounded-2xl border border-m3-primary/25"
     >
-      <div className="p-6 text-center">
-        <CheckCircle2 className="mx-auto mb-3 size-10 text-neon-green" />
-        <p className="text-lg font-bold text-white">
-          Fase de Grupos Finalizada!
+      <div className="p-8 text-center">
+        <MaterialSymbol
+          name="check_circle"
+          className="mx-auto mb-3 text-5xl text-m3-primary"
+        />
+        <p className="font-headline text-lg font-bold text-on-surface">
+          Fase de grupos finalizada!
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Todos os jogos foram realizados. Gere o mata-mata!
+        <p className="mt-2 font-body text-sm text-on-surface-variant">
+          Todos os jogos foram realizados. Gere o mata-mata.
         </p>
       </div>
-      <div className="px-4 pb-5">
+      <div className="px-4 pb-6">
         <button
           type="button"
           onClick={handleGenerate}
           disabled={isPending}
-          className="neon-button-primary flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-black tracking-widest transition-all active:scale-[0.98] disabled:opacity-60"
+          className="arena-neon-glow flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-m3-primary to-primary-container py-4 font-headline text-sm font-black uppercase tracking-widest text-on-primary-container transition-all active:scale-[0.98] disabled:opacity-60"
         >
           {isPending ? (
             <>
               <Loader2 className="size-5 animate-spin" />
-              GERANDO...
+              Gerando…
             </>
           ) : (
             <>
-              <Swords className="size-5" />
-              GERAR FASE FINAL
+              <MaterialSymbol name="swords" className="text-xl" />
+              Gerar fase final
             </>
           )}
         </button>
@@ -427,35 +501,84 @@ function UpcomingMatchesSection({
   totalPending: number;
   knockoutExists: boolean;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollBy = useCallback((dir: -1 | 1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 320, behavior: "smooth" });
+  }, []);
+
   return (
-    <>
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Zap className="size-4 text-neon-blue" />
-          <h2 className="text-sm font-semibold tracking-wider text-white">
-            {knockoutExists ? "MATA-MATA" : "PRÓXIMAS RODADAS"}
-          </h2>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-1 rounded-full bg-m3-primary" />
+          <h3 className="font-headline text-xl font-bold uppercase tracking-tight text-on-surface">
+            {knockoutExists ? "Mata-mata" : "Próximas rodadas"}
+          </h3>
         </div>
-        <Link
-          href="/matches"
-          className="flex items-center gap-1 text-xs text-neon-blue transition-colors hover:text-neon-blue/80"
-        >
-          {totalPending > 4 && (
-            <span className="rounded-full bg-neon-blue/10 px-2 py-0.5 text-[10px]">
-              +{totalPending - 4}
-            </span>
-          )}
-          Ver todas
-          <ArrowRight className="size-3" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/matches"
+            className="mr-1 hidden items-center gap-1 font-label text-xs font-bold uppercase tracking-widest text-m3-primary hover:text-primary-dim sm:flex"
+          >
+            {totalPending > matches.length && (
+              <span className="rounded-full bg-m3-primary/15 px-2 py-0.5 text-[10px] text-m3-primary">
+                +{totalPending - matches.length}
+              </span>
+            )}
+            Ver todas
+            <MaterialSymbol name="chevron_right" className="text-sm" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => scrollBy(-1)}
+            className="flex size-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container-low text-on-surface-variant transition-colors hover:text-m3-primary"
+            aria-label="Anterior"
+          >
+            <MaterialSymbol name="chevron_left" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollBy(1)}
+            className="flex size-10 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container-low text-on-surface-variant transition-colors hover:text-m3-primary"
+            aria-label="Seguinte"
+          >
+            <MaterialSymbol name="chevron_right" />
+          </button>
+        </div>
       </div>
-      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
+
+      <div
+        ref={scrollRef}
+        className="no-scrollbar flex snap-x gap-6 overflow-x-auto pb-2"
+      >
         {matches.map((match) => (
           <UpcomingMatchCard key={match.id} match={match} />
         ))}
       </div>
-    </>
+
+      <Link
+        href="/matches"
+        className="flex items-center justify-center gap-1 font-label text-xs font-bold uppercase tracking-widest text-m3-primary sm:hidden"
+      >
+        {totalPending > matches.length && (
+          <span className="rounded-full bg-m3-primary/15 px-2 py-0.5 text-[10px]">
+            +{totalPending - matches.length}
+          </span>
+        )}
+        Ver todas as partidas
+      </Link>
+    </div>
   );
+}
+
+function matchRoundLabel(match: MatchCardData) {
+  if (match.type === "KNOCKOUT") {
+    return STAGE_LABELS[match.stage] ?? match.stage.replaceAll("_", " ");
+  }
+  return match.groupName || "Grupo";
 }
 
 function UpcomingMatchCard({ match }: { match: MatchCardData }) {
@@ -463,50 +586,67 @@ function UpcomingMatchCard({ match }: { match: MatchCardData }) {
   return (
     <Link
       href={`/match/${match.id}`}
-      className="glass-card flex min-w-[220px] shrink-0 snap-start flex-col rounded-xl p-4 transition-all hover:brightness-110"
-      style={{
-        borderColor: isKnockout
-          ? "rgba(168, 85, 247, 0.2)"
-          : "rgba(59, 130, 246, 0.15)",
-      }}
+      className={cn(
+        "arena-glass-card flex w-80 max-w-[85vw] shrink-0 snap-center flex-col rounded-2xl border p-5 transition-all hover:border-m3-primary/20",
+        isKnockout
+          ? "border-purple-500/20"
+          : "border-outline-variant/10",
+      )}
     >
-      <div className="mb-3 flex items-center gap-1.5">
-        <Swords
-          className={`size-3 ${isKnockout ? "text-purple-400" : "text-neon-blue"}`}
-        />
+      <div className="mb-6 flex items-center justify-between">
         <span
-          className={`text-[10px] font-semibold tracking-wider ${isKnockout ? "text-purple-400" : "text-neon-blue"}`}
+          className={cn(
+            "rounded-full px-3 py-1 font-label text-[10px] font-bold uppercase tracking-widest",
+            isKnockout
+              ? "bg-purple-500/15 text-purple-300"
+              : "bg-m3-primary/10 text-m3-primary",
+          )}
         >
-          {match.groupName || match.stage.replace("_", " ")}
+          {matchRoundLabel(match)}
+        </span>
+        <span className="font-label text-[10px] font-medium uppercase text-on-surface-variant">
+          {isKnockout ? "Eliminatória" : "Pendente"}
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1 text-center">
-          <p className="truncate text-xs font-bold text-white">
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex flex-1 flex-col items-center gap-3">
+          <div className="relative flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface-container-highest">
+            <span className="font-headline text-lg font-bold text-m3-primary">
+              {initialsFromName(match.homePlayer.teamName)}
+            </span>
+          </div>
+          <span className="text-center font-headline text-sm font-bold tracking-tight text-on-surface">
             {match.homePlayer.name}
-          </p>
-          <p className="truncate text-[10px] text-muted-foreground">
+          </span>
+          <span className="-mt-1 line-clamp-1 text-center font-body text-[10px] text-on-surface-variant">
             {match.homePlayer.teamName}
-          </p>
+          </span>
         </div>
-        <span className="shrink-0 text-[10px] font-black text-white/20">
-          VS
-        </span>
-        <div className="min-w-0 flex-1 text-center">
-          <p className="truncate text-xs font-bold text-white">
+        <div className="px-4">
+          <span className="font-headline text-2xl font-light italic text-on-surface-variant">
+            VS
+          </span>
+        </div>
+        <div className="flex flex-1 flex-col items-center gap-3">
+          <div className="relative flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface-container-highest">
+            <span className="font-headline text-lg font-bold text-m3-primary">
+              {initialsFromName(match.awayPlayer.teamName)}
+            </span>
+          </div>
+          <span className="text-center font-headline text-sm font-bold tracking-tight text-on-surface">
             {match.awayPlayer.name}
-          </p>
-          <p className="truncate text-[10px] text-muted-foreground">
+          </span>
+          <span className="-mt-1 line-clamp-1 text-center font-body text-[10px] text-on-surface-variant">
             {match.awayPlayer.teamName}
-          </p>
+          </span>
         </div>
       </div>
 
       <AdminGuard>
-        <div className="mt-3 rounded-md bg-amber-500/10 py-1.5 text-center text-[10px] font-bold text-amber-400">
-          LANÇAR PLACAR
-        </div>
+        <span className="flex w-full items-center justify-center rounded-xl bg-surface-container-highest py-4 font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
+          Lançar placar
+        </span>
       </AdminGuard>
     </Link>
   );
@@ -514,44 +654,51 @@ function UpcomingMatchCard({ match }: { match: MatchCardData }) {
 
 function TournamentComplete() {
   return (
-    <div className="glass-card rounded-xl p-6 text-center">
-      <Trophy className="mx-auto mb-3 size-10 text-amber-400" />
-      <p className="text-lg font-bold text-white">Torneio Finalizado!</p>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <div className="arena-glass-card rounded-2xl border border-outline-variant/10 p-8 text-center">
+      <MaterialSymbol
+        name="emoji_events"
+        className="mx-auto mb-3 text-5xl text-m3-secondary"
+      />
+      <p className="font-headline text-lg font-bold text-on-surface">
+        Torneio finalizado!
+      </p>
+      <p className="mt-2 font-body text-sm text-on-surface-variant">
         Confira o chaveamento para ver o campeão.
       </p>
     </div>
   );
 }
 
-function PositionBadge({
-  pos,
-  qualified,
-}: {
-  pos: number;
-  qualified: boolean;
-}) {
-  if (qualified) {
+function PositionBadge({ pos }: { pos: number }) {
+  const label = String(pos).padStart(2, "0");
+  if (pos === 1) {
     return (
-      <span className="flex size-5 items-center justify-center rounded-full bg-neon-green/20 text-[10px] font-bold text-neon-green">
-        {pos}
-      </span>
+      <div className="flex size-8 items-center justify-center rounded-lg bg-m3-secondary/10 font-headline text-sm font-bold text-m3-secondary">
+        {label}
+      </div>
+    );
+  }
+  if (pos === 2) {
+    return (
+      <div className="flex size-8 items-center justify-center rounded-lg bg-m3-primary/10 font-headline text-sm font-bold text-m3-primary">
+        {label}
+      </div>
     );
   }
   return (
-    <span className="flex size-5 items-center justify-center text-muted-foreground">
-      {pos}
-    </span>
+    <div className="flex size-8 items-center justify-center rounded-lg bg-surface-container-highest font-headline text-sm font-bold text-on-surface-variant">
+      {label}
+    </div>
   );
 }
 
 function GoalDifference({ value }: { value: number }) {
   const color =
     value > 0
-      ? "text-neon-green"
+      ? "text-m3-primary"
       : value < 0
-        ? "text-red-400"
-        : "text-muted-foreground";
+        ? "text-m3-error"
+        : "text-on-surface-variant";
   const label = value > 0 ? `+${value}` : String(value);
   return <span className={color}>{label}</span>;
 }
