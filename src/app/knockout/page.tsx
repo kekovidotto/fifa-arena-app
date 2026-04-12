@@ -1,6 +1,5 @@
 import { asc, eq } from "drizzle-orm";
 
-import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { BracketContent } from "@/components/knockout/bracket-content";
 import { db } from "@/db";
 import { groups, matches, players } from "@/db/schema";
@@ -21,9 +20,8 @@ export default async function KnockoutPage() {
   const rounds = buildBracketRounds(matchCards);
 
   return (
-    <div className="flex min-h-dvh flex-col pb-20">
+    <div className="flex min-h-dvh flex-col pb-8">
       <BracketContent rounds={rounds} />
-      <BottomNav />
     </div>
   );
 }

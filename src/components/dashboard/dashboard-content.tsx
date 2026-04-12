@@ -3,9 +3,15 @@
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  BarChart3,
+  CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Crown,
+  Flag,
   Loader2,
+  Plus,
+  Settings,
   Swords,
   Trophy,
   Zap,
@@ -13,8 +19,20 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { toast } from "sonner";
 
 import { generateKnockoutPhase } from "@/app/actions/knockout";
+import { finalizeTournament } from "@/app/actions/tournament-finalize";
+import { AdminGuard } from "@/components/admin-guard";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   type GroupData,
   type MatchCardData,
@@ -27,6 +45,8 @@ interface DashboardContentProps {
   totalPending: number;
   groupPhaseComplete: boolean;
   knockoutExists: boolean;
+  canFinalizeTournament: boolean;
+  viewerIsAdmin: boolean;
 }
 
 const stagger = {
@@ -39,7 +59,7 @@ const fadeUp = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: "easeOut" },
+    transition: { duration: 0.4, ease: "easeOut" as const },
   },
 };
 
@@ -49,6 +69,8 @@ export function DashboardContent({
   totalPending,
   groupPhaseComplete,
   knockoutExists,
+  canFinalizeTournament,
+  viewerIsAdmin,
 }: DashboardContentProps) {
   return (
     <motion.div
@@ -57,6 +79,77 @@ export function DashboardContent({
       animate="show"
       className="mx-auto w-full max-w-lg px-4"
     >
+      {/* Admin bar */}
+      {viewerIsAdmin && (
+        <motion.div
+          variants={fadeUp}
+          className="mb-4 mt-2 flex flex-col gap-3 rounded-xl border border-amber-400/30 bg-amber-500/[0.07] p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[10px] font-black tracking-widest text-amber-300">
+              ADMIN
+            </span>
+            <span className="text-xs text-amber-200/80">Barra rápida</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/register"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-amber-400/35 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-200 transition-colors hover:bg-amber-500/25 sm:flex-none"
+            >
+              <Plus className="size-3.5" />
+              Novo registro
+            </Link>
+            <Link
+              href="/settings"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold text-white/90 transition-colors hover:bg-white/10 sm:flex-none"
+            >
+              <Settings className="size-3.5" />
+              Configurações
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-1 border-white/20 bg-white/5 text-xs font-bold text-white hover:bg-white/10"
+                >
+                  Mais
+                  <ChevronDown className="size-3.5 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="min-w-[200px] border-white/10 bg-[#0a0f1a] text-white"
+              >
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Ações rápidas
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem asChild className="focus:bg-white/10">
+                  <Link href="/matches" className="cursor-pointer">
+                    <CalendarDays className="mr-2 size-4" />
+                    Partidas
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="focus:bg-white/10">
+                  <Link href="/classificacao" className="cursor-pointer">
+                    <BarChart3 className="mr-2 size-4" />
+                    Classificação geral
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="focus:bg-white/10">
+                  <Link href="/artilheria" className="cursor-pointer">
+                    <Trophy className="mr-2 size-4" />
+                    Artilharia
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <motion.header variants={fadeUp} className="py-6 text-center">
         <div className="flex items-center justify-center gap-2">
@@ -73,7 +166,21 @@ export function DashboardContent({
       {/* Top Action Section */}
       <motion.section variants={fadeUp} className="mb-6">
         {groupPhaseComplete && !knockoutExists ? (
-          <GenerateKnockoutCTA />
+          <AdminGuard
+            fallback={
+              <div className="glass-card rounded-xl p-6 text-center">
+                <CheckCircle2 className="mx-auto mb-3 size-10 text-neon-green" />
+                <p className="text-lg font-bold text-white">
+                  Fase de Grupos Finalizada!
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Aguardando o administrador gerar o mata-mata.
+                </p>
+              </div>
+            }
+          >
+            <GenerateKnockoutCTA />
+          </AdminGuard>
         ) : upcomingMatches.length > 0 ? (
           <UpcomingMatchesSection
             matches={upcomingMatches}
@@ -102,6 +209,14 @@ export function DashboardContent({
             <Crown className="size-4" />
             VER CHAVEAMENTO
           </Link>
+        </motion.div>
+      )}
+
+      {canFinalizeTournament && (
+        <motion.div variants={fadeUp} className="mb-6">
+          <AdminGuard>
+            <FinalizeTournamentCTA />
+          </AdminGuard>
         </motion.div>
       )}
 
@@ -195,6 +310,60 @@ export function DashboardContent({
         ))}
       </section>
     </motion.div>
+  );
+}
+
+function FinalizeTournamentCTA() {
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  function handleFinalize() {
+    startTransition(async () => {
+      try {
+        await finalizeTournament();
+        toast.success("Campeonato finalizado! Conquistas registradas.");
+        router.refresh();
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Não foi possível finalizar.",
+        );
+      }
+    });
+  }
+
+  return (
+    <div
+      className="glass-card overflow-hidden rounded-xl"
+      style={{ borderColor: "rgba(251, 191, 36, 0.25)" }}
+    >
+      <div className="p-5 text-center">
+        <Flag className="mx-auto mb-2 size-9 text-amber-400" />
+        <p className="text-sm font-bold text-white">Encerrar campeonato</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Registra campeão, vice, 3º lugar e artilheiro nos perfis vinculados.
+        </p>
+      </div>
+      <div className="px-4 pb-5">
+        <button
+          type="button"
+          onClick={handleFinalize}
+          disabled={isPending}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/40 bg-amber-500/10 py-3.5 text-sm font-black tracking-widest text-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.15)] transition-all active:scale-[0.98] disabled:opacity-50"
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="size-5 animate-spin" />
+              FINALIZANDO...
+            </>
+          ) : (
+            <>
+              <Trophy className="size-5" />
+              FINALIZAR CAMPEONATO
+            </>
+          )}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -334,9 +503,11 @@ function UpcomingMatchCard({ match }: { match: MatchCardData }) {
         </div>
       </div>
 
-      <div className="mt-3 rounded-md bg-amber-500/10 py-1.5 text-center text-[10px] font-bold text-amber-400">
-        LANÇAR PLACAR
-      </div>
+      <AdminGuard>
+        <div className="mt-3 rounded-md bg-amber-500/10 py-1.5 text-center text-[10px] font-bold text-amber-400">
+          LANÇAR PLACAR
+        </div>
+      </AdminGuard>
     </Link>
   );
 }

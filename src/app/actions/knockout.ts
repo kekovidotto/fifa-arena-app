@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import { groups, matches, players } from "@/db/schema";
+import { requireAdmin } from "@/lib/admin";
 import {
   calculateStandings,
   getStageForMatchCount,
@@ -22,6 +23,8 @@ interface QualifiedPlayer {
 }
 
 export async function generateKnockoutPhase() {
+  await requireAdmin();
+
   const existingKnockout = await db
     .select({ id: matches.id })
     .from(matches)
@@ -50,6 +53,11 @@ export async function generateKnockoutPhase() {
     db.select().from(groups).orderBy(asc(groups.id)),
     db.select().from(players),
   ]);
+
+  const tournamentId = allGroups[0]?.tournamentId;
+  if (!tournamentId) {
+    throw new Error("Torneio não encontrado para gerar o mata-mata.");
+  }
 
   const qualified: QualifiedPlayer[] = [];
   const thirdPlaced: QualifiedPlayer[] = [];
@@ -121,6 +129,7 @@ export async function generateKnockoutPhase() {
         type: "KNOCKOUT",
         stage: firstRoundStage,
         status: "PENDING",
+        tournamentId,
       });
     }
   });
@@ -195,6 +204,7 @@ export async function advanceKnockoutWinner(finishedMatchId: number) {
     type: "KNOCKOUT",
     stage: nextStage,
     status: "PENDING",
+    tournamentId: finished.tournamentId,
   });
 
   revalidatePath("/dashboard");

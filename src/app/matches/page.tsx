@@ -1,6 +1,5 @@
 import { asc } from "drizzle-orm";
 
-import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { MatchesContent } from "@/components/matches/matches-content";
 import { db } from "@/db";
 import { groups, matches, players } from "@/db/schema";
@@ -16,9 +15,8 @@ export default async function MatchesPage() {
   const matchCards = buildMatchCards(allMatches, allPlayers, allGroups);
 
   return (
-    <div className="flex min-h-dvh flex-col pb-20">
+    <div className="flex min-h-dvh flex-col pb-8">
       <MatchesContent matches={matchCards} />
-      <BottomNav />
     </div>
   );
 }

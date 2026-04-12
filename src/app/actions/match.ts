@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import { goals, matches } from "@/db/schema";
+import { requireAdmin } from "@/lib/admin";
+
 import { advanceKnockoutWinner } from "./knockout";
 
 interface UpdateMatchInput {
@@ -14,6 +16,8 @@ interface UpdateMatchInput {
 }
 
 export async function updateMatchResult(input: UpdateMatchInput) {
+  await requireAdmin();
+
   const { matchId, scoreHome, scoreAway } = input;
 
   const [match] = await db
@@ -54,7 +58,10 @@ export async function updateMatchResult(input: UpdateMatchInput) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/artilheria");
   revalidatePath("/top-scorers");
+  revalidatePath("/classificacao");
+  revalidatePath("/standings");
   revalidatePath("/matches");
   revalidatePath("/knockout");
   revalidatePath(`/match/${matchId}`);

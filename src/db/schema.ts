@@ -1,16 +1,33 @@
 import { relations } from "drizzle-orm";
 import {
-  boolean, index,   integer,
+  boolean,
+  index,
+  integer,
   pgEnum,
   pgTable,
   serial,
   text,
-timestamp,
-  varchar} from "drizzle-orm/pg-core";
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/pg-core";
 
 export const matchTypeEnum = pgEnum("match_type", ["GROUP", "KNOCKOUT"]);
 export const matchStatusEnum = pgEnum("match_status", ["PENDING", "FINISHED"]);
-
+export const tournamentStatusEnum = pgEnum("tournament_status", [
+  "ACTIVE",
+  "FINISHED",
+]);
+export const achievementTypeEnum = pgEnum("achievement_type", [
+  "CHAMPION",
+  "RUNNER_UP",
+  "THIRD_PLACE",
+  "TOP_SCORER",
+  "FAN_FAVORITE",
+  "MVP",
+  "CRAQUE_DA_GALERA",
+  "FAIR_PLAY",
+]);
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -84,29 +101,19 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const userRelations = relations(user, ({ many }) => ({
-  sessions: many(session),
-  accounts: many(account),
-}));
-
-export const sessionRelations = relations(session, ({ one }) => ({
-  user: one(user, {
-    fields: [session.userId],
-    references: [user.id],
-  }),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
-    fields: [account.userId],
-    references: [user.id],
-  }),
-}));
-
+export const tournaments = pgTable("tournaments", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  date: timestamp("date").defaultNow().notNull(),
+  status: tournamentStatusEnum("status").notNull().default("ACTIVE"),
+});
 
 export const groups = pgTable("groups", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 50 }).notNull(),
+  tournamentId: integer("tournament_id")
+    .notNull()
+    .references(() => tournaments.id, { onDelete: "cascade" }),
 });
 
 export const players = pgTable("players", {
@@ -115,6 +122,7 @@ export const players = pgTable("players", {
   teamName: varchar("team_name", { length: 255 }).notNull(),
   teamLogo: varchar("team_logo", { length: 500 }),
   groupId: integer("group_id").references(() => groups.id),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
 });
 
 export const matches = pgTable("matches", {
@@ -131,6 +139,9 @@ export const matches = pgTable("matches", {
   stage: text("stage").notNull(),
   status: matchStatusEnum("status").default("PENDING").notNull(),
   groupId: integer("group_id").references(() => groups.id),
+  tournamentId: integer("tournament_id")
+    .notNull()
+    .references(() => tournaments.id, { onDelete: "cascade" }),
 });
 
 export const goals = pgTable("goals", {
@@ -143,3 +154,105 @@ export const goals = pgTable("goals", {
     .references(() => players.id),
   count: integer("count").notNull().default(0),
 });
+
+export const achievements = pgTable(
+  "achievements",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tournamentId: integer("tournament_id")
+      .notNull()
+      .references(() => tournaments.id, { onDelete: "restrict" }),
+    type: achievementTypeEnum("type").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("achievements_user_tournament_type_uidx").on(
+      t.userId,
+      t.tournamentId,
+      t.type,
+    ),
+  ],
+);
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+  achievements: many(achievements),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const tournamentsRelations = relations(tournaments, ({ many }) => ({
+  groups: many(groups),
+  matches: many(matches),
+  achievements: many(achievements),
+}));
+
+export const groupsRelations = relations(groups, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [groups.tournamentId],
+    references: [tournaments.id],
+  }),
+  players: many(players),
+  matches: many(matches),
+}));
+
+export const playersRelations = relations(players, ({ one }) => ({
+  group: one(groups, {
+    fields: [players.groupId],
+    references: [groups.id],
+  }),
+  appUser: one(user, {
+    fields: [players.userId],
+    references: [user.id],
+  }),
+}));
+
+export const matchesRelations = relations(matches, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [matches.tournamentId],
+    references: [tournaments.id],
+  }),
+  group: one(groups, {
+    fields: [matches.groupId],
+    references: [groups.id],
+  }),
+  goals: many(goals),
+}));
+
+export const goalsRelations = relations(goals, ({ one }) => ({
+  match: one(matches, {
+    fields: [goals.matchId],
+    references: [matches.id],
+  }),
+  player: one(players, {
+    fields: [goals.playerId],
+    references: [players.id],
+  }),
+}));
+
+export const achievementsRelations = relations(achievements, ({ one }) => ({
+  user: one(user, {
+    fields: [achievements.userId],
+    references: [user.id],
+  }),
+  tournament: one(tournaments, {
+    fields: [achievements.tournamentId],
+    references: [tournaments.id],
+  }),
+}));

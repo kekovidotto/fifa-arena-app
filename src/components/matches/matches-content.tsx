@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { AdminGuard } from "@/components/admin-guard";
 import type { MatchCardData } from "@/lib/tournament-utils";
 
 type Tab = "pending" | "finished" | "all";
@@ -32,7 +33,7 @@ const fadeUp = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: "easeOut" },
+    transition: { duration: 0.3, ease: "easeOut" as const },
   },
 };
 
@@ -240,26 +241,30 @@ function MatchListCard({ match }: { match: MatchCardData }) {
       {/* Action */}
       <div className="mt-3">
         {isPending ? (
-          <Link
-            href={`/match/${match.id}`}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-500/10 py-2.5 text-xs font-bold text-amber-400 transition-colors hover:bg-amber-500/15"
-          >
-            <Swords className="size-3.5" />
-            Lançar Placar
-          </Link>
+          <AdminGuard>
+            <Link
+              href={`/match/${match.id}`}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-500/10 py-2.5 text-xs font-bold text-amber-400 transition-colors hover:bg-amber-500/15"
+            >
+              <Swords className="size-3.5" />
+              Lançar Placar
+            </Link>
+          </AdminGuard>
         ) : (
           <div className="flex items-center gap-2">
             <div className="flex flex-1 items-center justify-center gap-1.5 py-1 text-xs text-neon-green">
               <CheckCircle2 className="size-3.5" />
               Finalizada
             </div>
-            <Link
-              href={`/match/${match.id}`}
-              className="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <Pencil className="size-3" />
-              Editar
-            </Link>
+            <AdminGuard>
+              <Link
+                href={`/match/${match.id}`}
+                className="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <Pencil className="size-3" />
+                Editar
+              </Link>
+            </AdminGuard>
           </div>
         )}
       </div>

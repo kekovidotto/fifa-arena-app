@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { updateMatchResult } from "@/app/actions/match";
+import { AdminGuard } from "@/components/admin-guard";
 
 interface PlayerInfo {
   id: number;
@@ -156,18 +157,18 @@ export function MatchForm({ match, homePlayer, awayPlayer }: MatchFormProps) {
 
       {/* Actions */}
       <div className="mt-8 flex flex-col gap-3 pb-8">
-        {isEditing ? (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isPending}
-            className="neon-button-primary flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-black tracking-widest transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            <Check className="size-5" />
-            CONFIRMAR RESULTADO
-          </button>
-        ) : (
-          <>
+        <AdminGuard>
+          {isEditing ? (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isPending}
+              className="neon-button-primary flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-black tracking-widest transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              <Check className="size-5" />
+              CONFIRMAR RESULTADO
+            </button>
+          ) : (
             <button
               type="button"
               onClick={() => setIsEditing(true)}
@@ -175,14 +176,14 @@ export function MatchForm({ match, homePlayer, awayPlayer }: MatchFormProps) {
             >
               EDITAR RESULTADO
             </button>
-            <Link
-              href="/dashboard"
-              className="flex w-full items-center justify-center rounded-xl bg-white/5 py-3.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              Voltar ao Dashboard
-            </Link>
-          </>
-        )}
+          )}
+        </AdminGuard>
+        <Link
+          href="/dashboard"
+          className="flex w-full items-center justify-center rounded-xl bg-white/5 py-3.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          Voltar ao Dashboard
+        </Link>
       </div>
     </div>
   );

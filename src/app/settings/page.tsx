@@ -1,9 +1,21 @@
-import { BottomNav } from "@/components/dashboard/bottom-nav";
-import { DangerZone } from "@/components/settings/danger-zone";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function SettingsPage() {
+import { AdminGuard } from "@/components/admin-guard";
+import { DangerZone } from "@/components/settings/danger-zone";
+import { auth } from "@/lib/auth";
+
+export default async function SettingsPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    redirect("/login");
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col pb-20">
+    <div className="flex min-h-dvh flex-col pb-8">
       <div className="mx-auto w-full max-w-lg px-4 py-6">
         <header className="mb-8 text-center">
           <h1 className="text-xl font-black tracking-widest text-white">
@@ -14,9 +26,18 @@ export default function SettingsPage() {
           </p>
         </header>
 
-        <DangerZone />
+        <AdminGuard
+          fallback={
+            <div className="glass-card rounded-xl p-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Apenas o administrador pode gerenciar o campeonato.
+              </p>
+            </div>
+          }
+        >
+          <DangerZone />
+        </AdminGuard>
       </div>
-      <BottomNav />
     </div>
   );
 }

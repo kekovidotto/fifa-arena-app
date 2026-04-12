@@ -1,11 +1,10 @@
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 
-import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { db } from "@/db";
-import { groups, matches, players } from "@/db/schema";
+import { groups, matches, players, tournaments } from "@/db/schema";
+import { isAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import {
   buildMatchCards,
@@ -17,14 +16,35 @@ export default async function DashboardPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  if (!session) {
-    redirect("/authentication");
+
+  const [allGroups, allPlayers, allMatches, activeTournamentRows] =
+    await Promise.all([
+      db.select().from(groups).orderBy(asc(groups.id)),
+      db.select().from(players),
+      db.select().from(matches).orderBy(asc(matches.id)),
+      db
+        .select()
+        .from(tournaments)
+        .where(eq(tournaments.status, "ACTIVE"))
+        .limit(1),
+    ]);
+
+  const activeTournament = activeTournamentRows[0];
+  let canFinalizeTournament = false;
+  if (activeTournament) {
+    const tMatches = allMatches.filter(
+      (m) => m.tournamentId === activeTournament.id,
+    );
+    if (
+      tMatches.length > 0 &&
+      tMatches.every((m) => m.status === "FINISHED")
+    ) {
+      const finalKnockout = tMatches.find(
+        (m) => m.type === "KNOCKOUT" && m.stage === "FINAL",
+      );
+      canFinalizeTournament = Boolean(finalKnockout);
+    }
   }
-  const [allGroups, allPlayers, allMatches] = await Promise.all([
-    db.select().from(groups).orderBy(asc(groups.id)),
-    db.select().from(players),
-    db.select().from(matches).orderBy(asc(matches.id)),
-  ]);
 
   const groupsData: GroupData[] = allGroups.map((group) => {
     const groupPlayers = allPlayers.filter((p) => p.groupId === group.id);
@@ -52,16 +72,19 @@ export default async function DashboardPage() {
     allGroups,
   );
 
+  const viewerIsAdmin = isAdmin(session?.user?.email);
+
   return (
-    <div className="flex min-h-dvh flex-col pb-20">
+    <div className="flex min-h-dvh flex-col pb-8">
       <DashboardContent
         groups={groupsData}
         upcomingMatches={upcomingMatches}
         totalPending={pendingMatches.length}
         groupPhaseComplete={groupPhaseComplete}
         knockoutExists={knockoutExists}
+        canFinalizeTournament={canFinalizeTournament}
+        viewerIsAdmin={viewerIsAdmin}
       />
-      <BottomNav />
     </div>
   );
 }

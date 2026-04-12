@@ -57,7 +57,7 @@ export function buildBracketRounds(
     byStage.get(m.stage)!.push(m);
   }
 
-  let firstIdx = STAGE_ORDER.length;
+  let firstIdx: number = STAGE_ORDER.length;
   for (const stage of byStage.keys()) {
     const idx = STAGE_ORDER.indexOf(stage as (typeof STAGE_ORDER)[number]);
     if (idx !== -1 && idx < firstIdx) firstIdx = idx;

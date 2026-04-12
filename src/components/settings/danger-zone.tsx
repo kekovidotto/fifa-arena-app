@@ -40,9 +40,10 @@ export function DangerZone() {
                 Resetar Apenas Placares
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Zera todos os placares e deleta gols. Jogadores, grupos e
-                partidas da fase de grupos são mantidos. Partidas de mata-mata
-                são removidas.
+                No campeonato <strong className="text-white">ativo</strong>,
+                zera placares e remove gols; partidas de mata-mata são apagadas
+                e a fase de grupos volta a ficar pendente. Usuários e troféus
+                não são alterados.
               </p>
             </div>
             <button
@@ -62,8 +63,9 @@ export function DangerZone() {
                 Apagar Campeonato Completo
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Remove TUDO do banco de dados: gols, partidas, jogadores e
-                grupos. Ideal para iniciar um campeonato do zero.
+                Apaga gols, partidas, jogadores, grupos e torneios sem conquistas
+                vinculadas. Contas e troféus permanecem; torneios com histórico
+                de prêmios viram apenas registro finalizado (sem jogos).
               </p>
             </div>
             <button
@@ -108,8 +110,8 @@ function ConfirmScoreResetModal({ onClose }: { onClose: () => void }) {
       <AlertTriangle className="mx-auto mb-3 size-12 text-amber-400" />
       <h3 className="text-lg font-bold text-white">Resetar Placares?</h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Todos os placares serão zerados, gols deletados e partidas de
-        mata-mata removidas. Os jogadores e grupos serão mantidos.
+        No torneio ativo: placares zerados, gols removidos e mata-mata apagado.
+        Fase de grupos volta como pendente. Fora do campeonato ativo, nada muda.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.
@@ -156,10 +158,17 @@ function ConfirmNuclearModal({ onClose }: { onClose: () => void }) {
   function handleConfirm() {
     if (!isValid) return;
     startTransition(async () => {
-      await nuclearReset();
-      toast.success("Campeonato apagado com sucesso!");
-      onClose();
-      router.push("/register");
+      try {
+        await nuclearReset();
+        toast.success("Campeonato apagado com sucesso!");
+        onClose();
+        router.push("/dashboard");
+        router.refresh();
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Não foi possível concluir o reset.",
+        );
+      }
     });
   }
 
@@ -170,8 +179,9 @@ function ConfirmNuclearModal({ onClose }: { onClose: () => void }) {
         Apagar Campeonato?
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Todos os dados serão permanentemente removidos: gols, partidas,
-        jogadores e grupos.
+        Remove todos os dados de jogo (gols, partidas, jogadores, grupos).
+        Usuários e conquistas não são apagados; torneios ligados a troféus
+        permanecem como registro finalizado.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.
