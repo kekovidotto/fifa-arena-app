@@ -279,7 +279,11 @@ export function TrophyRoomGrid({
         })}
       </div>
 
-      <Drawer open={open} onOpenChange={handleOpenChange}>
+      <Drawer
+        open={open}
+        onOpenChange={handleOpenChange}
+        shouldScaleBackground={false}
+      >
         <DrawerContent className="border-[#85adff]/20 bg-surface-container p-0 shadow-[0_-12px_40px_rgba(133,173,255,0.12)]">
           <div className="flex max-h-[min(85dvh,800px)] flex-col overflow-hidden">
             {selectedType && neon ? (
@@ -371,7 +375,9 @@ export function TrophyRoomGrid({
                         <AchievementDeleteButton
                           achievementId={rec.id}
                           profileUserId={profileUserId}
-                          title={`${ACHIEVEMENT_LABELS[rec.type]} — ${rec.tournamentName}`}
+                          trophyName={ACHIEVEMENT_LABELS[rec.type]}
+                          tournamentName={rec.tournamentName}
+                          onDeleted={() => handleOpenChange(false)}
                         />
                       ) : null}
                     </article>
