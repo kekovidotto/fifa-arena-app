@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { goals, matches } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { upsertFinishedMatchSnapshot } from "@/lib/match-history";
 
 import { advanceKnockoutWinner } from "./knockout";
 
@@ -55,6 +56,14 @@ export async function updateMatchResult(input: UpdateMatchInput) {
         count: scoreAway,
       });
     }
+
+    await upsertFinishedMatchSnapshot(tx, {
+      matchId,
+      playerHomeId: match.playerHomeId,
+      playerAwayId: match.playerAwayId,
+      scoreHome,
+      scoreAway,
+    });
   });
 
   revalidatePath("/dashboard");
@@ -65,6 +74,7 @@ export async function updateMatchResult(input: UpdateMatchInput) {
   revalidatePath("/matches");
   revalidatePath("/knockout");
   revalidatePath(`/match/${matchId}`);
+  revalidatePath("/profile", "layout");
 
   if (match.type === "KNOCKOUT") {
     await advanceKnockoutWinner(matchId);

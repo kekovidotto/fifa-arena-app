@@ -1,7 +1,12 @@
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 
 import { db } from "@/db";
-import { goals, matches, players } from "@/db/schema";
+import { matchHistory } from "@/db/schema";
+
+const XP_GOAL = 10;
+const XP_WIN = 50;
+const XP_DRAW = 20;
+const XP_PER_LEVEL = 1000;
 
 export interface UserProfileStats {
   totalGoals: number;
@@ -10,61 +15,61 @@ export interface UserProfileStats {
   losses: number;
   gamesPlayed: number;
   winRatePercent: number;
+  totalXp: number;
+  level: number;
+  xpIntoLevel: number;
+  xpForNextLevel: number;
+  levelTitle: string;
 }
 
+function levelTitleFor(level: number): string {
+  if (level <= 1) return "Iniciante da Arena";
+  if (level <= 3) return "Competidor da Arena";
+  if (level <= 6) return "Veterano da Arena";
+  if (level <= 10) return "Lenda da Arena";
+  return "Mito da Arena";
+}
+
+function levelProgressFromXp(totalXp: number) {
+  const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
+  const xpIntoLevel = totalXp % XP_PER_LEVEL;
+  return {
+    level,
+    xpIntoLevel,
+    xpForNextLevel: XP_PER_LEVEL,
+    levelTitle: levelTitleFor(level),
+  };
+}
+
+/** Estatísticas permanentes a partir de `match_history` (partidas finalizadas arquivadas). */
 export async function computeUserProfileStats(
   userId: string,
 ): Promise<UserProfileStats> {
-  const myPlayers = await db
-    .select({ id: players.id })
-    .from(players)
-    .where(eq(players.userId, userId));
-
-  const playerIds = myPlayers.map((p) => p.id);
-  if (playerIds.length === 0) {
-    return {
-      totalGoals: 0,
-      wins: 0,
-      draws: 0,
-      losses: 0,
-      gamesPlayed: 0,
-      winRatePercent: 0,
-    };
-  }
-
-  const goalRows = await db
-    .select({
-      total: sql<number>`coalesce(sum(${goals.count}), 0)::int`,
-    })
-    .from(goals)
-    .where(inArray(goals.playerId, playerIds));
-
-  const totalGoals = goalRows[0]?.total ?? 0;
-
-  const finished = await db
+  const rows = await db
     .select()
-    .from(matches)
+    .from(matchHistory)
     .where(
-      and(
-        eq(matches.status, "FINISHED"),
-        or(
-          inArray(matches.playerHomeId, playerIds),
-          inArray(matches.playerAwayId, playerIds),
-        ),
+      or(
+        eq(matchHistory.homeUserId, userId),
+        eq(matchHistory.awayUserId, userId),
       ),
     );
 
+  let totalGoals = 0;
   let wins = 0;
   let draws = 0;
   let losses = 0;
 
-  for (const m of finished) {
-    const isHome = playerIds.includes(m.playerHomeId);
-    const isAway = playerIds.includes(m.playerAwayId);
+  for (const r of rows) {
+    const isHome = r.homeUserId === userId;
+    const isAway = r.awayUserId === userId;
     if (!isHome && !isAway) continue;
 
-    const gf = isHome ? m.scoreHome : m.scoreAway;
-    const ga = isHome ? m.scoreAway : m.scoreHome;
+    const gf = isHome ? r.scoreHome : r.scoreAway;
+    const ga = isHome ? r.scoreAway : r.scoreHome;
+    const goalsScored = isHome ? r.goalsHome : r.goalsAway;
+
+    totalGoals += goalsScored;
 
     if (gf > ga) wins++;
     else if (gf === ga) draws++;
@@ -77,6 +82,10 @@ export async function computeUserProfileStats(
   const winRatePercent =
     maxPoints > 0 ? Math.round((points / maxPoints) * 1000) / 10 : 0;
 
+  const totalXp = totalGoals * XP_GOAL + wins * XP_WIN + draws * XP_DRAW;
+  const { level, xpIntoLevel, xpForNextLevel, levelTitle } =
+    levelProgressFromXp(totalXp);
+
   return {
     totalGoals,
     wins,
@@ -84,5 +93,10 @@ export async function computeUserProfileStats(
     losses,
     gamesPlayed,
     winRatePercent,
+    totalXp,
+    level,
+    xpIntoLevel,
+    xpForNextLevel,
+    levelTitle,
   };
 }

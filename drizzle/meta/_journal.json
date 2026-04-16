@@ -29,6 +29,13 @@
       "when": 1776015363990,
       "tag": "0003_teams_library",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776100000000,
+      "tag": "0004_match_history",
+      "breakpoints": true
     }
   ]
 }

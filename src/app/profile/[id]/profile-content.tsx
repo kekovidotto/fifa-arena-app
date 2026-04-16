@@ -1,19 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  Award,
-  Crosshair,
-  Handshake,
-  Heart,
-  Medal,
-  Shield,
-  Sparkles,
-  Star,
-  Trophy,
-  Zap,
-} from "lucide-react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 import { AchievementDeleteButton } from "@/components/profile/achievement-delete-button";
 import { GrantTrophyDialog } from "@/components/profile/grant-trophy-dialog";
@@ -22,6 +11,7 @@ import {
   type AchievementType,
 } from "@/lib/achievement-types";
 import type { UserProfileStats } from "@/lib/profile-stats";
+import { cn } from "@/lib/utils";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -37,78 +27,46 @@ const stagger = {
   show: { opacity: 1, transition: { staggerChildren: 0.06 } },
 };
 
+function Ms({
+  name,
+  className,
+  style,
+}: {
+  name: string;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <span
+      className={cn("material-symbols-outlined select-none", className)}
+      style={style}
+      aria-hidden
+    >
+      {name}
+    </span>
+  );
+}
+
 const TROPHY_CONFIG: {
   type: AchievementType;
   label: string;
-  Icon: typeof Trophy;
-  activeClass: string;
-  glow: string;
+  icon: string;
 }[] = [
-  {
-    type: "CHAMPION",
-    label: "Campeão",
-    Icon: Trophy,
-    activeClass: "text-amber-400",
-    glow: "shadow-[0_0_24px_rgba(251,191,36,0.45)] border-amber-400/40",
-  },
-  {
-    type: "RUNNER_UP",
-    label: "Vice",
-    Icon: Medal,
-    activeClass: "text-slate-200",
-    glow: "shadow-[0_0_22px_rgba(226,232,240,0.35)] border-slate-300/35",
-  },
-  {
-    type: "THIRD_PLACE",
-    label: "3º Lugar",
-    Icon: Award,
-    activeClass: "text-amber-700",
-    glow: "shadow-[0_0_20px_rgba(180,83,9,0.4)] border-amber-700/40",
-  },
-  {
-    type: "TOP_SCORER",
-    label: "Artilheiro",
-    Icon: Crosshair,
-    activeClass: "text-neon-green",
-    glow: "shadow-[0_0_24px_rgba(34,197,94,0.45)] border-neon-green/40",
-  },
-  {
-    type: "FAN_FAVORITE",
-    label: "Queridinho da torcida",
-    Icon: Heart,
-    activeClass: "text-pink-400",
-    glow: "shadow-[0_0_22px_rgba(244,114,182,0.4)] border-pink-400/40",
-  },
-  {
-    type: "MVP",
-    label: "MVP",
-    Icon: Star,
-    activeClass: "text-yellow-300",
-    glow: "shadow-[0_0_22px_rgba(253,224,71,0.4)] border-yellow-300/40",
-  },
-  {
-    type: "CRAQUE_DA_GALERA",
-    label: "Craque da galera",
-    Icon: Sparkles,
-    activeClass: "text-cyan-300",
-    glow: "shadow-[0_0_22px_rgba(103,232,249,0.4)] border-cyan-300/40",
-  },
-  {
-    type: "FAIR_PLAY",
-    label: "Fair play",
-    Icon: Handshake,
-    activeClass: "text-emerald-300",
-    glow: "shadow-[0_0_22px_rgba(110,231,183,0.35)] border-emerald-300/40",
-  },
+  { type: "CHAMPION", label: "Campeão", icon: "emoji_events" },
+  { type: "RUNNER_UP", label: "Vice", icon: "military_tech" },
+  { type: "THIRD_PLACE", label: "3º Lugar", icon: "workspace_premium" },
+  { type: "TOP_SCORER", label: "Artilheiro", icon: "sports_soccer" },
+  { type: "FAN_FAVORITE", label: "Queridinho da torcida", icon: "favorite" },
+  { type: "MVP", label: "MVP", icon: "star" },
+  { type: "CRAQUE_DA_GALERA", label: "Craque da galera", icon: "groups" },
+  { type: "FAIR_PLAY", label: "Fair play", icon: "verified_user" },
 ];
 
-function levelFromGames(games: number) {
-  return Math.min(99, Math.floor(games / 3) + 1);
-}
-
-function xpLabel(games: number) {
-  const xp = games * 25;
-  return `${xp} XP`;
+function xpBarPercent(stats: UserProfileStats) {
+  if (stats.xpForNextLevel <= 0) return 0;
+  const raw = (stats.xpIntoLevel / stats.xpForNextLevel) * 100;
+  if (stats.totalXp === 0) return 5;
+  return Math.min(100, Math.max(2, raw));
 }
 
 interface ProfileContentProps {
@@ -128,6 +86,7 @@ interface ProfileContentProps {
   viewerIsAdmin: boolean;
   /** E-mail só para o próprio usuário ou admin (perfil público oculta). */
   canViewEmail: boolean;
+  isOwnProfile: boolean;
 }
 
 export function ProfileContent({
@@ -137,135 +96,175 @@ export function ProfileContent({
   achievementRecords,
   viewerIsAdmin,
   canViewEmail,
+  isOwnProfile,
 }: ProfileContentProps) {
   const unlocked = new Set(unlockedAchievements);
-  const level = levelFromGames(stats.gamesPlayed);
+  const xpPct = xpBarPercent(stats);
 
   return (
-    <div className="mx-auto min-h-dvh max-w-lg px-4 pb-10 pt-6">
-      <motion.div
+    <div className="bg-m3-background text-on-surface min-h-dvh font-body">
+      <header className="sticky top-16 z-40 flex h-14 items-center justify-between border-b border-outline-variant/10 bg-[#080e1c]/95 px-4 backdrop-blur-md supports-backdrop-filter:bg-[#080e1c]/80">
+        <Link
+          href="/players"
+          className="flex items-center gap-3 text-m3-primary transition-colors active:scale-95"
+        >
+          <Ms name="arrow_back" className="text-[22px]" />
+          <span className="font-headline text-lg font-bold uppercase tracking-widest text-on-surface">
+            {isOwnProfile ? "Meu perfil" : "Perfil"}
+          </span>
+        </Link>
+      </header>
+
+      <motion.main
         variants={stagger}
         initial="hidden"
         animate="show"
-        className="space-y-8"
+        className="mx-auto max-w-2xl space-y-8 px-6 pb-28 pt-8"
       >
-        <motion.header variants={fadeUp} className="text-center">
-          <Link
-            href="/players"
-            className="mb-6 inline-flex text-xs font-semibold text-neon-blue hover:text-neon-blue/80"
-          >
-            ← Hall da Fama
-          </Link>
+        <motion.section variants={fadeUp} className="flex flex-col items-center text-center">
+          <div className="relative">
+            <div className="h-32 w-32 rounded-full bg-linear-to-tr from-m3-primary to-[#00f1fe] p-1 shadow-[0_0_15px_rgba(133,173,255,0.35)]">
+              {user.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.image}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full rounded-full border-4 border-m3-background object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full border-4 border-m3-background bg-surface-container-highest font-headline text-4xl font-bold text-m3-primary">
+                  {user.name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="absolute -bottom-2 right-0 rounded-full bg-m3-secondary px-3 py-1 font-headline text-sm font-bold text-on-secondary shadow-lg">
+              PRO
+            </div>
+          </div>
+          <div className="mt-5 space-y-1">
+            <h2 className="font-headline text-3xl font-bold tracking-tight text-on-surface">
+              {user.name}
+            </h2>
+            {canViewEmail ? (
+              <p className="font-label text-sm text-on-surface-variant">
+                {user.email}
+              </p>
+            ) : null}
+          </div>
+        </motion.section>
 
-          <div className="relative mx-auto mb-4 size-28">
+        <motion.section
+          variants={fadeUp}
+          className="space-y-4 rounded-xl bg-surface-container-low p-6"
+        >
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-m3-primary/30 bg-primary-container/20">
+                <span className="font-headline text-2xl font-bold text-m3-primary [text-shadow:0_0_8px_rgba(133,173,255,0.55)]">
+                  {stats.level}
+                </span>
+              </div>
+              <div className="min-w-0 text-left">
+                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                  Nível atual
+                </p>
+                <p className="font-headline font-bold text-on-surface">
+                  LEVEL {stats.level}
+                </p>
+              </div>
+            </div>
+            <p className="shrink-0 font-label text-[10px] font-bold uppercase tracking-tighter text-on-surface-variant">
+              {stats.xpIntoLevel} / {stats.xpForNextLevel} XP
+            </p>
+          </div>
+          <div className="h-3 w-full overflow-hidden rounded-full bg-surface-container-highest">
             <div
-              className="absolute inset-0 rounded-full bg-linear-to-br from-neon-green/30 to-neon-blue/20 blur-xl"
-              aria-hidden
+              className="h-full rounded-full bg-linear-to-r from-m3-primary to-[#00f1fe] shadow-[0_0_12px_#3B82F6] transition-[width] duration-500"
+              style={{ width: `${xpPct}%` }}
             />
-            {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.image}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="relative size-full rounded-full border-2 border-white/10 object-cover ring-2 ring-neon-green/30"
-              />
-            ) : (
-              <div className="relative flex size-full items-center justify-center rounded-full border-2 border-white/10 bg-white/5 text-3xl font-black text-white/40">
-                {user.name.slice(0, 1).toUpperCase()}
-              </div>
-            )}
           </div>
-
-          <h1 className="text-2xl font-black tracking-tight text-white">
-            {user.name}
-          </h1>
-          {canViewEmail && (
-            <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
-          )}
-
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <span className="neon-badge inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold">
-              <Shield className="size-3.5" />
-              NÍVEL {level}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-neon-blue/30 bg-neon-blue/10 px-4 py-1.5 text-xs font-bold text-neon-blue">
-              <Zap className="size-3.5" />
-              {xpLabel(stats.gamesPlayed)}
-            </span>
-          </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Nível baseado em partidas disputadas vinculadas à sua conta.
+          <p className="text-center font-label text-[10px] font-bold uppercase tracking-[0.2em] text-m3-primary">
+            {stats.levelTitle}
           </p>
+        </motion.section>
 
-          {viewerIsAdmin && (
-            <div className="mx-auto mt-6 w-full max-w-xs">
-              <GrantTrophyDialog targetUserId={user.id} />
-            </div>
-          )}
-        </motion.header>
+        <motion.section variants={fadeUp} className="grid grid-cols-2 gap-4">
+          <div className="rounded-xl border-l-4 border-m3-primary bg-surface-container-low p-5">
+            <p className="mb-1 font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              Gols totais
+            </p>
+            <p className="font-headline text-4xl font-bold tabular-nums text-on-surface">
+              {stats.totalGoals}
+            </p>
+          </div>
+          <div className="rounded-xl border-l-4 border-[#00f1fe] bg-surface-container-low p-5">
+            <p className="mb-1 font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              Aproveitamento
+            </p>
+            <p className="font-headline text-4xl font-bold tabular-nums text-on-surface">
+              {stats.winRatePercent}
+              <span className="text-xl opacity-50">%</span>
+            </p>
+          </div>
 
-        {/* Stats grid */}
-        <motion.section variants={fadeUp}>
-          <h2 className="mb-3 text-xs font-bold tracking-widest text-muted-foreground">
-            ESTATÍSTICAS
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="glass-card rounded-xl p-4 text-center">
-              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground">
-                GOLS TOTAIS
-              </p>
-              <p className="mt-1 text-3xl font-black tabular-nums text-neon-green">
-                {stats.totalGoals}
-              </p>
-            </div>
-            <div className="glass-card rounded-xl p-4 text-center">
-              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground">
-                APROVEITAMENTO
-              </p>
-              <p className="mt-1 text-3xl font-black tabular-nums text-neon-blue">
-                {stats.winRatePercent}%
-              </p>
-            </div>
-            <div className="glass-card col-span-2 rounded-xl p-4">
-              <p className="mb-3 text-center text-[10px] font-semibold tracking-wider text-muted-foreground">
-                V · E · D
-              </p>
-              <div className="flex justify-around text-center">
-                <div>
-                  <p className="text-2xl font-black text-neon-green">
-                    {stats.wins}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Vitórias</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-amber-400">
-                    {stats.draws}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Empates</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-red-400">
-                    {stats.losses}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Derrotas</p>
-                </div>
+          <div className="relative col-span-2 overflow-hidden rounded-xl bg-surface-container-low p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="text-left">
+                <h3 className="font-headline text-lg font-bold text-on-surface">
+                  V - E - D
+                </h3>
+                <p className="font-label text-xs text-on-surface-variant">
+                  {stats.gamesPlayed} jogos computados
+                </p>
               </div>
-              <p className="mt-3 text-center text-[11px] text-muted-foreground">
-                {stats.gamesPlayed} jogos computados
-              </p>
+              <Ms
+                name="query_stats"
+                className="text-4xl text-on-surface-variant opacity-20"
+              />
+            </div>
+            <div className="flex gap-4">
+              <div className="flex flex-1 flex-col items-center rounded-lg border-b-2 border-green-500/50 bg-surface-container/50 py-3">
+                <span className="font-headline text-2xl font-bold text-on-surface">
+                  {stats.wins}
+                </span>
+                <span className="font-label text-[10px] font-bold uppercase text-green-400">
+                  Vitórias
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col items-center rounded-lg border-b-2 border-yellow-500/50 bg-surface-container/50 py-3">
+                <span className="font-headline text-2xl font-bold text-on-surface">
+                  {stats.draws}
+                </span>
+                <span className="font-label text-[10px] font-bold uppercase text-yellow-400">
+                  Empates
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col items-center rounded-lg border-b-2 border-red-500/50 bg-surface-container/50 py-3">
+                <span className="font-headline text-2xl font-bold text-on-surface">
+                  {stats.losses}
+                </span>
+                <span className="font-label text-[10px] font-bold uppercase text-red-400">
+                  Derrotas
+                </span>
+              </div>
             </div>
           </div>
         </motion.section>
 
-        {/* Trophy room */}
-        <motion.section variants={fadeUp}>
-          <h2 className="mb-4 flex items-center justify-center gap-2 text-sm font-black tracking-widest text-white">
-            <Trophy className="size-4 text-amber-400" />
-            SALA DE TROFÉUS
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {TROPHY_CONFIG.map(({ type, label, Icon, activeClass, glow }) => {
+        <motion.section variants={fadeUp} className="space-y-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Ms
+              name="military_tech"
+              className="text-m3-secondary text-[26px]"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            />
+            <h3 className="font-headline text-xl font-bold uppercase tracking-tight">
+              Sala de troféus
+            </h3>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {TROPHY_CONFIG.map(({ type, label, icon }) => {
               const on = unlocked.has(type);
               const recordsForType = achievementRecords.filter(
                 (a) => a.type === type,
@@ -273,45 +272,51 @@ export function ProfileContent({
               return (
                 <div
                   key={type}
-                  className={`glass-card relative flex flex-col items-center rounded-xl p-4 transition-all ${
-                    on
-                      ? glow
-                      : "border-white/5 opacity-50 grayscale"
-                  }`}
+                  className={cn(
+                    "group flex flex-col items-center gap-2 rounded-xl bg-surface-container-low p-3 transition-all hover:bg-surface-container-highest",
+                    on && "ring-1 ring-m3-primary/25",
+                  )}
                 >
-                  <motion.div
-                    initial={false}
-                    animate={
+                  <div
+                    className={cn(
+                      "flex h-12 w-12 items-center justify-center rounded-full border bg-surface-container transition-all",
                       on
-                        ? { scale: [1, 1.06, 1], filter: "brightness(1.15)" }
-                        : {}
-                    }
-                    transition={{ duration: 0.5 }}
+                        ? "border-m3-primary/50 shadow-[0_0_14px_rgba(0,241,254,0.35)]"
+                        : "border-outline-variant/20",
+                    )}
                   >
-                    <Icon
-                      className={`size-12 ${on ? activeClass : "text-white/25"}`}
-                      strokeWidth={on ? 2 : 1.5}
+                    <Ms
+                      name={icon}
+                      className={cn(
+                        "text-2xl",
+                        on
+                          ? "text-[#00f1fe] drop-shadow-[0_0_8px_rgba(0,241,254,0.75)]"
+                          : "text-on-surface-variant/30",
+                      )}
+                      style={
+                        on
+                          ? { fontVariationSettings: "'FILL' 1" }
+                          : undefined
+                      }
                     />
-                  </motion.div>
-                  <p
-                    className={`mt-2 text-center text-xs font-bold ${on ? "text-white" : "text-white/35"}`}
+                  </div>
+                  <span
+                    className={cn(
+                      "text-center font-label text-[9px] font-bold uppercase leading-tight",
+                      on ? "text-on-surface" : "text-on-surface-variant",
+                    )}
                   >
                     {label}
-                  </p>
-                  {!on && (
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      Bloqueado
-                    </p>
-                  )}
-                  {viewerIsAdmin && on && recordsForType.length > 0 && (
-                    <div className="mt-3 flex w-full flex-wrap items-center justify-center gap-1 border-t border-white/10 pt-2">
+                  </span>
+                  {viewerIsAdmin && on && recordsForType.length > 0 ? (
+                    <div className="flex w-full flex-wrap items-center justify-center gap-1 border-t border-outline-variant/20 pt-2">
                       {recordsForType.map((rec) => (
                         <div
                           key={rec.id}
-                          className="flex max-w-full items-center gap-0.5 rounded-md bg-white/5 px-1 py-0.5"
+                          className="flex max-w-full items-center gap-0.5 rounded-md bg-surface-container-high px-1 py-0.5"
                           title={`${ACHIEVEMENT_LABELS[rec.type]} — ${rec.tournamentName}`}
                         >
-                          <span className="max-w-[100px] truncate text-[9px] text-muted-foreground">
+                          <span className="max-w-[72px] truncate font-body text-[8px] text-on-surface-variant">
                             {rec.tournamentName}
                           </span>
                           <AchievementDeleteButton
@@ -322,13 +327,22 @@ export function ProfileContent({
                         </div>
                       ))}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
           </div>
         </motion.section>
-      </motion.div>
+
+        {viewerIsAdmin ? (
+          <motion.section variants={fadeUp} className="pt-2">
+            <GrantTrophyDialog
+              targetUserId={user.id}
+              triggerClassName="flex h-auto items-center justify-center gap-3 rounded-xl border border-m3-primary/20 bg-surface-container-low py-4 font-headline text-sm font-bold uppercase tracking-widest text-on-surface hover:bg-m3-primary/5 active:scale-[0.98]"
+            />
+          </motion.section>
+        ) : null}
+      </motion.main>
     </div>
   );
 }

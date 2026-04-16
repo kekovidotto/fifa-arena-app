@@ -175,6 +175,26 @@ export const goals = pgTable("goals", {
   count: integer("count").notNull().default(0),
 });
 
+/** Snapshot permanente de partidas finalizadas (sobrevive ao reset do torneio ativo). */
+export const matchHistory = pgTable(
+  "match_history",
+  {
+    id: serial("id").primaryKey(),
+    sourceMatchId: integer("source_match_id").notNull().unique(),
+    homeUserId: text("home_user_id"),
+    awayUserId: text("away_user_id"),
+    scoreHome: integer("score_home").notNull(),
+    scoreAway: integer("score_away").notNull(),
+    goalsHome: integer("goals_home").notNull().default(0),
+    goalsAway: integer("goals_away").notNull().default(0),
+    finishedAt: timestamp("finished_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("match_history_home_user_idx").on(t.homeUserId),
+    index("match_history_away_user_idx").on(t.awayUserId),
+  ],
+);
+
 export const achievements = pgTable(
   "achievements",
   {

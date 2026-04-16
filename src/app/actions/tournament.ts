@@ -1,17 +1,10 @@
 "use server";
 
-import { eq, notInArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
-import {
-  achievements,
-  goals,
-  groups,
-  matches,
-  players,
-  tournaments,
-} from "@/db/schema";
+import { goals, groups, matches, matchHistory, players, tournaments } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
 
 export interface PlayerInput {
@@ -147,6 +140,13 @@ export async function resetMatchScores(): Promise<{ success: true }> {
   await requireAdmin();
 
   await db.transaction(async (tx) => {
+    const idRows = await tx.select({ id: matches.id }).from(matches);
+    const ids = idRows.map((r) => r.id);
+    if (ids.length > 0) {
+      await tx
+        .delete(matchHistory)
+        .where(inArray(matchHistory.sourceMatchId, ids));
+    }
     await tx.delete(goals);
     await tx
       .update(matches)
@@ -154,6 +154,7 @@ export async function resetMatchScores(): Promise<{ success: true }> {
   });
 
   revalidatePath("/", "layout");
+  revalidatePath("/profile", "layout");
   return { success: true };
 }
 
@@ -161,27 +162,43 @@ export async function nuclearReset(): Promise<{ success: true }> {
   await requireAdmin();
 
   await db.transaction(async (tx) => {
-    await tx.delete(goals);
-    await tx.delete(matches);
-    await tx.delete(players);
-    await tx.delete(groups);
+    const activeRows = await tx
+      .select({ id: tournaments.id })
+      .from(tournaments)
+      .where(eq(tournaments.status, "ACTIVE"))
+      .limit(1);
 
-    const blockedRows = await tx
-      .select({ tournamentId: achievements.tournamentId })
-      .from(achievements)
-      .groupBy(achievements.tournamentId);
-    const blockedIds = blockedRows.map((r) => r.tournamentId);
-
-    if (blockedIds.length === 0) {
-      await tx.delete(tournaments);
-    } else {
-      await tx
-        .delete(tournaments)
-        .where(notInArray(tournaments.id, blockedIds));
-      await tx.update(tournaments).set({ status: "FINISHED" });
+    const activeId = activeRows[0]?.id;
+    if (activeId == null) {
+      return;
     }
+
+    const matchIdRows = await tx
+      .select({ id: matches.id })
+      .from(matches)
+      .where(eq(matches.tournamentId, activeId));
+    const matchIds = matchIdRows.map((m) => m.id);
+
+    if (matchIds.length > 0) {
+      await tx.delete(goals).where(inArray(goals.matchId, matchIds));
+      await tx.delete(matches).where(eq(matches.tournamentId, activeId));
+    }
+
+    const groupIdRows = await tx
+      .select({ id: groups.id })
+      .from(groups)
+      .where(eq(groups.tournamentId, activeId));
+    const groupIds = groupIdRows.map((g) => g.id);
+
+    if (groupIds.length > 0) {
+      await tx.delete(players).where(inArray(players.groupId, groupIds));
+      await tx.delete(groups).where(eq(groups.tournamentId, activeId));
+    }
+
+    await tx.delete(tournaments).where(eq(tournaments.id, activeId));
   });
 
   revalidatePath("/", "layout");
+  revalidatePath("/profile", "layout");
   return { success: true };
 }

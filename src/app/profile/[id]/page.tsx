@@ -55,25 +55,26 @@ export default async function ProfilePage({
       (session.user.id === id || viewerIsAdmin),
   );
 
+  const isOwnProfile = session?.user?.id === id;
+
   return (
-    <div className="flex min-h-dvh flex-col pb-8">
-      <ProfileContent
-        user={{
-          id: profileUser.id,
-          name: profileUser.name,
-          email: profileUser.email,
-          image: profileUser.image,
-        }}
-        stats={stats}
-        unlockedAchievements={Array.from(unlocked)}
-        achievementRecords={achievementRows.map((r) => ({
-          id: r.id,
-          type: r.type as AchievementType,
-          tournamentName: r.tournamentName,
-        }))}
-        viewerIsAdmin={viewerIsAdmin}
-        canViewEmail={canViewEmail}
-      />
-    </div>
+    <ProfileContent
+      user={{
+        id: profileUser.id,
+        name: profileUser.name,
+        email: profileUser.email,
+        image: profileUser.image,
+      }}
+      stats={stats}
+      unlockedAchievements={Array.from(unlocked)}
+      achievementRecords={achievementRows.map((r) => ({
+        id: r.id,
+        type: r.type as AchievementType,
+        tournamentName: r.tournamentName,
+      }))}
+      viewerIsAdmin={viewerIsAdmin}
+      canViewEmail={canViewEmail}
+      isOwnProfile={isOwnProfile}
+    />
   );
 }

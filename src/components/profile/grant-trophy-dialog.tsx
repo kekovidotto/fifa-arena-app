@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trophy } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -21,8 +21,16 @@ import {
   ACHIEVEMENT_TYPES,
   type AchievementType,
 } from "@/lib/achievement-types";
+import { cn } from "@/lib/utils";
 
-export function GrantTrophyDialog({ targetUserId }: { targetUserId: string }) {
+export function GrantTrophyDialog({
+  targetUserId,
+  triggerClassName,
+}: {
+  targetUserId: string;
+  /** Estilo do botão que abre o diálogo (ex.: página de perfil). */
+  triggerClassName?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<AchievementType>("CHAMPION");
   const [tournamentName, setTournamentName] = useState("");
@@ -60,11 +68,19 @@ export function GrantTrophyDialog({ targetUserId }: { targetUserId: string }) {
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="w-full border border-amber-400/40 bg-amber-500/15 font-bold text-amber-300 hover:bg-amber-500/25"
           variant="outline"
+          className={cn(
+            "group w-full border border-amber-400/40 bg-amber-500/15 font-bold text-amber-300 hover:bg-amber-500/25",
+            triggerClassName,
+          )}
         >
-          <Trophy className="mr-2 size-4" />
-          Conceder Prêmio Manual
+          <span
+            className="material-symbols-outlined mr-2 text-[22px] text-m3-primary transition-transform group-hover:rotate-12"
+            aria-hidden
+          >
+            card_giftcard
+          </span>
+          Conceder prêmio manual
         </Button>
       </DialogTrigger>
       <DialogContent

@@ -42,8 +42,9 @@ export function DangerZone() {
               <p className="mt-1 text-xs text-muted-foreground">
                 Remove todos os gols e zera{" "}
                 <strong className="text-white">todas</strong> as partidas
-                (placar 0×0, status pendente), em qualquer torneio. Usuários e
-                troféus não são alterados.
+                (placar 0×0, status pendente), em qualquer torneio. O histórico
+                eterno de perfil ligado a essas partidas também é removido.
+                Usuários e troféus não são alterados.
               </p>
             </div>
             <button
@@ -63,9 +64,10 @@ export function DangerZone() {
                 Apagar Campeonato Completo
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Apaga gols, partidas, jogadores, grupos e torneios sem conquistas
-                vinculadas. Contas e troféus permanecem; torneios com histórico
-                de prêmios viram apenas registro finalizado (sem jogos).
+                Remove apenas o <strong className="text-white">torneio ativo</strong>{" "}
+                (gols, partidas, jogadores e grupos da edição em andamento).
+                Contas, troféus e o histórico eterno de perfil (partidas já
+                finalizadas) permanecem intactos.
               </p>
             </div>
             <button
@@ -117,7 +119,8 @@ function ConfirmScoreResetModal({ onClose }: { onClose: () => void }) {
       <h3 className="text-lg font-bold text-white">Resetar Placares?</h3>
       <p className="mt-2 text-sm text-muted-foreground">
         Todas as partidas voltam a 0×0 e ficam pendentes; todos os registros de
-        gols são apagados. Funciona mesmo sem campeonato ativo.
+        gols são apagados. Os snapshots de histórico de perfil dessas partidas
+        também são removidos. Funciona mesmo sem campeonato ativo.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.
@@ -185,9 +188,9 @@ function ConfirmNuclearModal({ onClose }: { onClose: () => void }) {
         Apagar Campeonato?
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Remove todos os dados de jogo (gols, partidas, jogadores, grupos).
-        Usuários e conquistas não são apagados; torneios ligados a troféus
-        permanecem como registro finalizado.
+        Apaga somente o campeonato em andamento (gols, partidas, jogadores e
+        grupos do torneio ativo). Usuários, troféus e estatísticas permanentes
+        do perfil não são apagados.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.
