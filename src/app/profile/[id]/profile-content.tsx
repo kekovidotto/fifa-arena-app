@@ -4,12 +4,9 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
-import { AchievementDeleteButton } from "@/components/profile/achievement-delete-button";
 import { GrantTrophyDialog } from "@/components/profile/grant-trophy-dialog";
-import {
-  ACHIEVEMENT_LABELS,
-  type AchievementType,
-} from "@/lib/achievement-types";
+import { TrophyRoomGrid } from "@/components/profile/trophy-room-grid";
+import type { AchievementType } from "@/lib/achievement-types";
 import type { UserProfileStats } from "@/lib/profile-stats";
 import { cn } from "@/lib/utils";
 
@@ -47,21 +44,6 @@ function Ms({
   );
 }
 
-const TROPHY_CONFIG: {
-  type: AchievementType;
-  label: string;
-  icon: string;
-}[] = [
-  { type: "CHAMPION", label: "Campeão", icon: "emoji_events" },
-  { type: "RUNNER_UP", label: "Vice", icon: "military_tech" },
-  { type: "THIRD_PLACE", label: "3º Lugar", icon: "workspace_premium" },
-  { type: "TOP_SCORER", label: "Artilheiro", icon: "sports_soccer" },
-  { type: "FAN_FAVORITE", label: "Queridinho da torcida", icon: "favorite" },
-  { type: "MVP", label: "MVP", icon: "star" },
-  { type: "CRAQUE_DA_GALERA", label: "Craque da galera", icon: "groups" },
-  { type: "FAIR_PLAY", label: "Fair play", icon: "verified_user" },
-];
-
 function xpBarPercent(stats: UserProfileStats) {
   if (stats.xpForNextLevel <= 0) return 0;
   const raw = (stats.xpIntoLevel / stats.xpForNextLevel) * 100;
@@ -77,11 +59,12 @@ interface ProfileContentProps {
     image: string | null;
   };
   stats: UserProfileStats;
-  unlockedAchievements: AchievementType[];
+  achievementCounts: Record<AchievementType, number>;
   achievementRecords: {
     id: number;
     type: AchievementType;
     tournamentName: string;
+    earnedAt: string;
   }[];
   viewerIsAdmin: boolean;
   /** E-mail só para o próprio usuário ou admin (perfil público oculta). */
@@ -92,13 +75,12 @@ interface ProfileContentProps {
 export function ProfileContent({
   user,
   stats,
-  unlockedAchievements,
+  achievementCounts,
   achievementRecords,
   viewerIsAdmin,
   canViewEmail,
   isOwnProfile,
 }: ProfileContentProps) {
-  const unlocked = new Set(unlockedAchievements);
   const xpPct = xpBarPercent(stats);
 
   return (
@@ -263,75 +245,12 @@ export function ProfileContent({
               Sala de troféus
             </h3>
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            {TROPHY_CONFIG.map(({ type, label, icon }) => {
-              const on = unlocked.has(type);
-              const recordsForType = achievementRecords.filter(
-                (a) => a.type === type,
-              );
-              return (
-                <div
-                  key={type}
-                  className={cn(
-                    "group flex flex-col items-center gap-2 rounded-xl bg-surface-container-low p-3 transition-all hover:bg-surface-container-highest",
-                    on && "ring-1 ring-m3-primary/25",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-full border bg-surface-container transition-all",
-                      on
-                        ? "border-m3-primary/50 shadow-[0_0_14px_rgba(0,241,254,0.35)]"
-                        : "border-outline-variant/20",
-                    )}
-                  >
-                    <Ms
-                      name={icon}
-                      className={cn(
-                        "text-2xl",
-                        on
-                          ? "text-[#00f1fe] drop-shadow-[0_0_8px_rgba(0,241,254,0.75)]"
-                          : "text-on-surface-variant/30",
-                      )}
-                      style={
-                        on
-                          ? { fontVariationSettings: "'FILL' 1" }
-                          : undefined
-                      }
-                    />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-center font-label text-[9px] font-bold uppercase leading-tight",
-                      on ? "text-on-surface" : "text-on-surface-variant",
-                    )}
-                  >
-                    {label}
-                  </span>
-                  {viewerIsAdmin && on && recordsForType.length > 0 ? (
-                    <div className="flex w-full flex-wrap items-center justify-center gap-1 border-t border-outline-variant/20 pt-2">
-                      {recordsForType.map((rec) => (
-                        <div
-                          key={rec.id}
-                          className="flex max-w-full items-center gap-0.5 rounded-md bg-surface-container-high px-1 py-0.5"
-                          title={`${ACHIEVEMENT_LABELS[rec.type]} — ${rec.tournamentName}`}
-                        >
-                          <span className="max-w-[72px] truncate font-body text-[8px] text-on-surface-variant">
-                            {rec.tournamentName}
-                          </span>
-                          <AchievementDeleteButton
-                            achievementId={rec.id}
-                            profileUserId={user.id}
-                            title={`${ACHIEVEMENT_LABELS[rec.type]} — ${rec.tournamentName}`}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+          <TrophyRoomGrid
+            profileUserId={user.id}
+            achievementCounts={achievementCounts}
+            achievementRecords={achievementRecords}
+            viewerIsAdmin={viewerIsAdmin}
+          />
         </motion.section>
 
         {viewerIsAdmin ? (
