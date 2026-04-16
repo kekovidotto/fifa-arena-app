@@ -206,8 +206,21 @@
   box-shadow: 0px 20px 40px rgba(133, 173, 255, 0.08);
 }
 
+/* Artilharia: cartão do 1º lugar (neon dourado / âmbar alinhado a --color-m3-secondary) */
+.scorers-leader-neon {
+  box-shadow:
+    0 0 0 1px rgba(252, 192, 37, 0.35),
+    0 0 28px rgba(252, 192, 37, 0.28),
+    0 0 64px rgba(252, 192, 37, 0.12),
+    0px 20px 40px rgba(133, 173, 255, 0.06);
+}
+
 .glow-primary-soft {
   box-shadow: 0 0 12px rgba(133, 173, 255, 0.3);
+}
+
+.glow-secondary {
+  box-shadow: 0 0 20px rgba(252, 192, 37, 0.22);
 }
 
 .neon-input {

@@ -138,6 +138,10 @@ export interface Scorer {
   playerId: number;
   playerName: string;
   teamName: string;
+  /** URL do escudo (time em uso na inscrição). */
+  teamLogo: string | null;
+  /** Quando preenchido, o nome pode apontar para `/profile/[userId]`. */
+  userId: string | null;
   totalGoals: number;
 }
 

@@ -6,6 +6,8 @@ const PUBLIC_PREFIXES = [
   "/login",
   "/signup",
   "/authentication",
+  "/artilheria",
+  "/top-scorers",
 ] as const;
 
 function isPublicPath(pathname: string): boolean {

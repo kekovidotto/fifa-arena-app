@@ -6,17 +6,27 @@ import { goals, players } from "@/db/schema";
 import type { Scorer } from "@/lib/tournament-utils";
 
 export default async function ArtilheriaPage() {
+  const goalSum = sql<number>`coalesce(cast(sum(${goals.count}) as integer), 0)`;
+
   const scorers: Scorer[] = await db
     .select({
-      playerId: goals.playerId,
+      playerId: players.id,
       playerName: players.name,
       teamName: players.teamName,
-      totalGoals: sql<number>`cast(sum(${goals.count}) as integer)`,
+      teamLogo: players.teamLogo,
+      userId: players.userId,
+      totalGoals: goalSum,
     })
-    .from(goals)
-    .innerJoin(players, eq(goals.playerId, players.id))
-    .groupBy(goals.playerId, players.name, players.teamName)
-    .orderBy(desc(sql`sum(${goals.count})`));
+    .from(players)
+    .leftJoin(goals, eq(goals.playerId, players.id))
+    .groupBy(
+      players.id,
+      players.name,
+      players.teamName,
+      players.teamLogo,
+      players.userId,
+    )
+    .orderBy(desc(goalSum), players.name);
 
   return (
     <div className="flex min-h-dvh flex-col pb-8">
