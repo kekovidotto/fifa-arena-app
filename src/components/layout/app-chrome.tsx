@@ -200,7 +200,7 @@ export function AppChrome({
 
   if (isAuthRoute) {
     return (
-      <div className="flex min-h-dvh flex-col bg-[#020617]">{children}</div>
+      <div className="flex min-h-dvh flex-col bg-m3-background">{children}</div>
     );
   }
 
