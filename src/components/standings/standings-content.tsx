@@ -76,7 +76,13 @@ function GoalDiffCell({ value }: { value: number }) {
   );
 }
 
-export function StandingsContent({ groups }: { groups: StandingsGroupBlock[] }) {
+export function StandingsContent({
+  groups,
+  hasActiveTournament = true,
+}: {
+  groups: StandingsGroupBlock[];
+  hasActiveTournament?: boolean;
+}) {
   const [activeId, setActiveId] = useState<number | null>(
     groups[0]?.id ?? null,
   );
@@ -96,7 +102,9 @@ export function StandingsContent({ groups }: { groups: StandingsGroupBlock[] }) 
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-10 md:px-8">
         <p className="text-center font-body text-on-surface-variant">
-          Nenhum grupo cadastrado.
+          {hasActiveTournament
+            ? "Nenhum grupo cadastrado neste campeonato."
+            : "Não há campeonato ativo no momento."}
         </p>
       </div>
     );

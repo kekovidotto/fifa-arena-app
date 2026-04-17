@@ -13,6 +13,7 @@ import {
   tournaments,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { upsertFinishedMatchSnapshot } from "@/lib/match-history";
 
 type AchievementType =
   | "CHAMPION"
@@ -159,6 +160,17 @@ export async function finalizeTournament() {
   if (topScorerPid != null) pushAchievement(topScorerPid, "TOP_SCORER");
 
   await db.transaction(async (tx) => {
+    for (const m of tourneyMatches) {
+      if (m.status !== "FINISHED") continue;
+      await upsertFinishedMatchSnapshot(tx, {
+        matchId: m.id,
+        playerHomeId: m.playerHomeId,
+        playerAwayId: m.playerAwayId,
+        scoreHome: m.scoreHome,
+        scoreAway: m.scoreAway,
+      });
+    }
+
     if (toInsert.length > 0) {
       await tx.insert(achievements).values(toInsert);
     }
@@ -170,5 +182,8 @@ export async function finalizeTournament() {
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard");
+  revalidatePath("/matches");
+  revalidatePath("/classificacao");
+  revalidatePath("/profile");
   revalidatePath("/profile", "layout");
 }

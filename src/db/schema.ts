@@ -29,6 +29,12 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "FAIR_PLAY",
 ]);
 
+export const matchHistoryResultEnum = pgEnum("match_history_result", [
+  "W",
+  "D",
+  "L",
+]);
+
 /** Clubes europeus (UCL) vs seleções (Copa do Mundo). */
 export const teamLibraryCategoryEnum = pgEnum("team_library_category", [
   "EUROPE",
@@ -175,23 +181,23 @@ export const goals = pgTable("goals", {
   count: integer("count").notNull().default(0),
 });
 
-/** Snapshot permanente de partidas finalizadas (sobrevive ao reset do torneio ativo). */
+/** Uma linha por usuário por partida finalizada (sobrevive ao reset do torneio ativo). */
 export const matchHistory = pgTable(
   "match_history",
   {
     id: serial("id").primaryKey(),
-    sourceMatchId: integer("source_match_id").notNull().unique(),
-    homeUserId: text("home_user_id"),
-    awayUserId: text("away_user_id"),
-    scoreHome: integer("score_home").notNull(),
-    scoreAway: integer("score_away").notNull(),
-    goalsHome: integer("goals_home").notNull().default(0),
-    goalsAway: integer("goals_away").notNull().default(0),
+    sourceMatchId: integer("source_match_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    result: matchHistoryResultEnum("result").notNull(),
+    goals: integer("goals").notNull().default(0),
+    tournamentName: varchar("tournament_name", { length: 255 }).notNull(),
     finishedAt: timestamp("finished_at").defaultNow().notNull(),
   },
   (t) => [
-    index("match_history_home_user_idx").on(t.homeUserId),
-    index("match_history_away_user_idx").on(t.awayUserId),
+    uniqueIndex("match_history_source_user_uidx").on(t.sourceMatchId, t.userId),
+    index("match_history_user_id_idx").on(t.userId),
   ],
 );
 
@@ -221,6 +227,14 @@ export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
   achievements: many(achievements),
+  matchHistoryRows: many(matchHistory),
+}));
+
+export const matchHistoryRelations = relations(matchHistory, ({ one }) => ({
+  appUser: one(user, {
+    fields: [matchHistory.userId],
+    references: [user.id],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({

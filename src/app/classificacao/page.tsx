@@ -1,4 +1,4 @@
-import { asc, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 
 import type {
   StandingRow,
@@ -6,15 +6,13 @@ import type {
 } from "@/components/standings/standings-content";
 import { StandingsContent } from "@/components/standings/standings-content";
 import { db } from "@/db";
-import { groups, matches, players, user } from "@/db/schema";
+import { user } from "@/db/schema";
+import { getActiveTournamentBundle } from "@/lib/active-tournament-data";
 import { calculateStandings } from "@/lib/tournament-utils";
 
 export default async function ClassificacaoPage() {
-  const [allGroups, allPlayers, allMatches] = await Promise.all([
-    db.select().from(groups).orderBy(asc(groups.id)),
-    db.select().from(players),
-    db.select().from(matches).orderBy(asc(matches.id)),
-  ]);
+  const { activeTournament, groups: allGroups, players: allPlayers, matches: allMatches } =
+    await getActiveTournamentBundle();
 
   const userIds = [
     ...new Set(
@@ -56,7 +54,10 @@ export default async function ClassificacaoPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-m3-background pb-16 font-body text-on-surface selection:bg-m3-primary selection:text-on-primary">
-      <StandingsContent groups={groupsData} />
+      <StandingsContent
+        groups={groupsData}
+        hasActiveTournament={activeTournament != null}
+      />
     </div>
   );
 }

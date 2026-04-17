@@ -36,6 +36,13 @@
       "when": 1776100000000,
       "tag": "0004_match_history",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776200000000,
+      "tag": "0005_match_history_per_user",
+      "breakpoints": true
     }
   ]
 }

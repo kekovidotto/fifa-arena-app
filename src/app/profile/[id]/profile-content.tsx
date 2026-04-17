@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 import { GrantTrophyDialog } from "@/components/profile/grant-trophy-dialog";
 import { TrophyRoomGrid } from "@/components/profile/trophy-room-grid";
@@ -44,11 +45,13 @@ function Ms({
   );
 }
 
-function xpBarPercent(stats: UserProfileStats) {
+/** Progresso do nível: resto do XP total por 1000 (mesma regra que `computeUserProfileStats` / `match_history`). */
+function profileXpBarTargetPercent(stats: UserProfileStats) {
   if (stats.xpForNextLevel <= 0) return 0;
-  const raw = (stats.xpIntoLevel / stats.xpForNextLevel) * 100;
-  if (stats.totalXp === 0) return 5;
-  return Math.min(100, Math.max(2, raw));
+  return Math.min(
+    100,
+    Math.max(0, (stats.xpIntoLevel / stats.xpForNextLevel) * 100),
+  );
 }
 
 interface ProfileContentProps {
@@ -81,7 +84,22 @@ export function ProfileContent({
   canViewEmail,
   isOwnProfile,
 }: ProfileContentProps) {
-  const xpPct = xpBarPercent(stats);
+  const [xpWidthPct, setXpWidthPct] = useState(0);
+
+  useEffect(() => {
+    setXpWidthPct(0);
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setXpWidthPct(profileXpBarTargetPercent(stats));
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [user.id, stats.xpIntoLevel, stats.xpForNextLevel]);
 
   return (
     <div className="bg-m3-background text-on-surface min-h-dvh font-body">
@@ -160,10 +178,14 @@ export function ProfileContent({
               {stats.xpIntoLevel} / {stats.xpForNextLevel} XP
             </p>
           </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-surface-container-highest">
+          <div className="h-3.5 w-full overflow-hidden rounded-full bg-[#030712]/90 shadow-inner ring-1 ring-blue-950/40">
             <div
-              className="h-full rounded-full bg-linear-to-r from-m3-primary to-[#00f1fe] shadow-[0_0_12px_#3B82F6] transition-[width] duration-500"
-              style={{ width: `${xpPct}%` }}
+              className={cn(
+                "h-full max-w-full rounded-full bg-linear-to-r from-[#85adff] to-[#3B82F6]",
+                "transition-all duration-1000 ease-out",
+                "shadow-[0_0_14px_rgba(133,173,255,0.55),6px_0_22px_rgba(59,130,246,0.75),0_0_28px_rgba(59,130,246,0.35)]",
+              )}
+              style={{ width: `${xpWidthPct}%` }}
             />
           </div>
           <p className="text-center font-label text-[10px] font-bold uppercase tracking-[0.2em] text-m3-primary">

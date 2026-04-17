@@ -1,22 +1,15 @@
-import { asc, eq } from "drizzle-orm";
-
 import { BracketContent } from "@/components/knockout/bracket-content";
-import { db } from "@/db";
-import { groups, matches, players } from "@/db/schema";
+import { getActiveTournamentBundle } from "@/lib/active-tournament-data";
 import { buildBracketRounds, buildMatchCards } from "@/lib/tournament-utils";
 
 export default async function KnockoutPage() {
-  const [allGroups, allPlayers, knockoutMatches] = await Promise.all([
-    db.select().from(groups).orderBy(asc(groups.id)),
-    db.select().from(players),
-    db
-      .select()
-      .from(matches)
-      .where(eq(matches.type, "KNOCKOUT"))
-      .orderBy(asc(matches.id)),
-  ]);
+  const { groups, players, matches } = await getActiveTournamentBundle();
 
-  const matchCards = buildMatchCards(knockoutMatches, allPlayers, allGroups);
+  const knockoutMatches = matches
+    .filter((m) => m.type === "KNOCKOUT")
+    .sort((a, b) => a.id - b.id);
+
+  const matchCards = buildMatchCards(knockoutMatches, players, groups);
   const rounds = buildBracketRounds(matchCards);
 
   return (

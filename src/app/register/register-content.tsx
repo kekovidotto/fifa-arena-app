@@ -212,8 +212,10 @@ export function RegisterContent({
                 Vincular conta do app (opcional)
               </div>
               <p className="mb-2 text-[11px] text-muted-foreground">
-                Busque por nome ou e-mail para associar o participante a um
-                usuário — assim partidas e troféus entram no perfil dele.
+                O nome e o time acima valem só para esta edição. Busque por nome
+                ou e-mail para vincular a um usuário: o histórico (XP, V-E-D,
+                gols) segue a conta, usando o apelido e a seleção que você
+                definiu aqui.
               </p>
               <div className="flex gap-2">
                 <input

@@ -40,11 +40,12 @@ export function DangerZone() {
                 Resetar Apenas Placares
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Remove todos os gols e zera{" "}
-                <strong className="text-white">todas</strong> as partidas
-                (placar 0×0, status pendente), em qualquer torneio. O histórico
-                eterno de perfil ligado a essas partidas também é removido.
-                Usuários e troféus não são alterados.
+                Remove gols e zera placares das partidas do torneio{" "}
+                <strong className="text-white">ACTIVE</strong> (0×0, pendentes).
+                Remove também o snapshot em{" "}
+                <strong className="text-white">match_history</strong> dessas
+                partidas, para o perfil bater com a edição atual. Usuários e
+                troféus não são alterados.
               </p>
             </div>
             <button
@@ -64,10 +65,11 @@ export function DangerZone() {
                 Apagar Campeonato Completo
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Remove apenas o <strong className="text-white">torneio ativo</strong>{" "}
-                (gols, partidas, jogadores e grupos da edição em andamento).
-                Contas, troféus e o histórico eterno de perfil (partidas já
-                finalizadas) permanecem intactos.
+                Salva partidas finalizadas em{" "}
+                <strong className="text-white">match_history</strong>, apaga o
+                torneio <strong className="text-white">ACTIVE</strong> e limpa
+                a edição. Convidados sem conta somem; quem tem conta fica no
+                banco para reconvite. Troféus e contas não são removidos.
               </p>
             </div>
             <button
@@ -118,9 +120,11 @@ function ConfirmScoreResetModal({ onClose }: { onClose: () => void }) {
       <AlertTriangle className="mx-auto mb-3 size-12 text-amber-400" />
       <h3 className="text-lg font-bold text-white">Resetar Placares?</h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Todas as partidas voltam a 0×0 e ficam pendentes; todos os registros de
-        gols são apagados. Os snapshots de histórico de perfil dessas partidas
-        também são removidos. Funciona mesmo sem campeonato ativo.
+        Todas as partidas do torneio ativo voltam a 0×0 e ficam pendentes; os
+        gols desta edição são apagados. As linhas de{" "}
+        <span className="text-white/90">match_history</span> ligadas a essas
+        partidas também são removidas, para não manter estatísticas de jogos
+        que deixaram de existir. Se não houver campeonato ativo, nada muda.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.
@@ -188,9 +192,13 @@ function ConfirmNuclearModal({ onClose }: { onClose: () => void }) {
         Apagar Campeonato?
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Apaga somente o campeonato em andamento (gols, partidas, jogadores e
-        grupos do torneio ativo). Usuários, troféus e estatísticas permanentes
-        do perfil não são apagados.
+        Antes de apagar, as partidas finalizadas são salvas em{" "}
+        <span className="text-white/90">match_history</span> (por usuário
+        vinculado, sem duplicar XP). Em seguida remove gols, partidas, grupos e
+        o torneio <span className="text-white/90">ACTIVE</span>. Participantes
+        sem conta são excluídos; quem tem <span className="text-white/90">userId</span>{" "}
+        permanece com dados de edição limpos para um novo convite. Troféus e
+        contas não são removidos.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.

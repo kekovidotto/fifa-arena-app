@@ -27,6 +27,8 @@ import {
 import { cn } from "@/lib/utils";
 
 interface DashboardContentProps {
+  /** Dados abaixo refletem apenas o torneio com status ACTIVE. */
+  hasActiveTournament: boolean;
   groups: GroupData[];
   upcomingMatches: MatchCardData[];
   totalPending: number;
@@ -76,6 +78,7 @@ function initialsFromName(name: string) {
 }
 
 export function DashboardContent({
+  hasActiveTournament,
   groups,
   upcomingMatches,
   totalPending,
@@ -167,6 +170,34 @@ export function DashboardContent({
         </motion.section>
       )}
 
+      {!hasActiveTournament ? (
+        <motion.section variants={fadeUp} className="space-y-6">
+          <div className="arena-glass-card rounded-2xl border border-outline-variant/10 p-10 text-center">
+            <MaterialSymbol
+              name="sports_soccer"
+              className="mx-auto mb-4 text-5xl text-m3-primary [filter:drop-shadow(0_0_12px_rgba(59,130,246,0.45))]"
+            />
+            <p className="font-headline text-xl font-bold tracking-tight text-on-surface">
+              Nenhum campeonato ativo
+            </p>
+            <p className="mx-auto mt-3 max-w-md font-body text-sm text-on-surface-variant">
+              Quando um administrador criar um novo torneio pelo lobby, grupos,
+              partidas e classificação aparecem aqui automaticamente.
+            </p>
+            {viewerIsAdmin ? (
+              <Link
+                href="/register"
+                className="arena-neon-glow mt-8 inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-m3-primary to-primary-container px-8 py-3.5 font-label text-xs font-bold uppercase tracking-widest text-on-primary-container transition-all active:scale-95"
+              >
+                <MaterialSymbol name="add_circle" className="text-base" />
+                Abrir lobby de registro
+              </Link>
+            ) : null}
+          </div>
+        </motion.section>
+      ) : null}
+
+      {hasActiveTournament ? (
       <motion.section variants={fadeUp} className="space-y-6">
         {groupPhaseComplete && !knockoutExists ? (
           <AdminGuard
@@ -207,8 +238,9 @@ export function DashboardContent({
           </div>
         )}
       </motion.section>
+      ) : null}
 
-      {knockoutExists && (
+      {hasActiveTournament && knockoutExists ? (
         <motion.div variants={fadeUp}>
           <Link
             href="/knockout"
@@ -218,17 +250,17 @@ export function DashboardContent({
             Ver chaveamento
           </Link>
         </motion.div>
-      )}
+      ) : null}
 
-      {canFinalizeTournament && (
+      {hasActiveTournament && canFinalizeTournament ? (
         <motion.div variants={fadeUp}>
           <AdminGuard>
             <FinalizeTournamentCTA />
           </AdminGuard>
         </motion.div>
-      )}
+      ) : null}
 
-      {groups.length > 0 && activeGroup && (
+      {hasActiveTournament && groups.length > 0 && activeGroup ? (
         <motion.section variants={fadeUp} className="space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
@@ -370,15 +402,17 @@ export function DashboardContent({
             </div>
           </div>
         </motion.section>
-      )}
+      ) : null}
 
-      <Link
-        href="/matches"
-        className="arena-neon-glow fixed bottom-6 right-4 z-40 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-m3-primary to-primary-container text-on-primary-container transition-transform active:scale-90 sm:bottom-8 sm:right-8"
-        aria-label="Ver todas as partidas"
-      >
-        <MaterialSymbol name="sports_soccer" className="text-3xl" />
-      </Link>
+      {hasActiveTournament ? (
+        <Link
+          href="/matches"
+          className="arena-neon-glow fixed bottom-6 right-4 z-40 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-m3-primary to-primary-container text-on-primary-container transition-transform active:scale-90 sm:bottom-8 sm:right-8"
+          aria-label="Ver todas as partidas"
+        >
+          <MaterialSymbol name="sports_soccer" className="text-3xl" />
+        </Link>
+      ) : null}
     </motion.div>
   );
 }

@@ -1,9 +1,18 @@
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { goals, matchHistory, players } from "@/db/schema";
+import { goals, matches, matchHistory, players, tournaments } from "@/db/schema";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+function resultForSide(
+  scoreSide: number,
+  scoreOpp: number,
+): "W" | "D" | "L" {
+  if (scoreSide > scoreOpp) return "W";
+  if (scoreSide === scoreOpp) return "D";
+  return "L";
+}
 
 export async function upsertFinishedMatchSnapshot(
   tx: DbTransaction,
@@ -15,6 +24,15 @@ export async function upsertFinishedMatchSnapshot(
     scoreAway: number;
   },
 ) {
+  const [meta] = await tx
+    .select({ tournamentName: tournaments.name })
+    .from(matches)
+    .innerJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+    .where(eq(matches.id, input.matchId))
+    .limit(1);
+
+  const tournamentName = meta?.tournamentName ?? "Torneio";
+
   const [[homeRow], [awayRow]] = await Promise.all([
     tx
       .select({ userId: players.userId })
@@ -52,29 +70,52 @@ export async function upsertFinishedMatchSnapshot(
 
   const goalsHome = ghRow?.total ?? 0;
   const goalsAway = gaRow?.total ?? 0;
+  const finishedAt = new Date();
 
-  await tx
-    .insert(matchHistory)
-    .values({
-      sourceMatchId: input.matchId,
-      homeUserId: homeRow?.userId ?? null,
-      awayUserId: awayRow?.userId ?? null,
-      scoreHome: input.scoreHome,
-      scoreAway: input.scoreAway,
-      goalsHome,
-      goalsAway,
-      finishedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: matchHistory.sourceMatchId,
-      set: {
-        homeUserId: homeRow?.userId ?? null,
-        awayUserId: awayRow?.userId ?? null,
-        scoreHome: input.scoreHome,
-        scoreAway: input.scoreAway,
-        goalsHome,
-        goalsAway,
-        finishedAt: new Date(),
-      },
-    });
+  const homeUserId = homeRow?.userId?.trim() ? homeRow.userId.trim() : null;
+  const awayUserId = awayRow?.userId?.trim() ? awayRow.userId.trim() : null;
+
+  if (homeUserId) {
+    await tx
+      .insert(matchHistory)
+      .values({
+        sourceMatchId: input.matchId,
+        userId: homeUserId,
+        result: resultForSide(input.scoreHome, input.scoreAway),
+        goals: goalsHome,
+        tournamentName,
+        finishedAt,
+      })
+      .onConflictDoUpdate({
+        target: [matchHistory.sourceMatchId, matchHistory.userId],
+        set: {
+          result: resultForSide(input.scoreHome, input.scoreAway),
+          goals: goalsHome,
+          tournamentName,
+          finishedAt,
+        },
+      });
+  }
+
+  if (awayUserId) {
+    await tx
+      .insert(matchHistory)
+      .values({
+        sourceMatchId: input.matchId,
+        userId: awayUserId,
+        result: resultForSide(input.scoreAway, input.scoreHome),
+        goals: goalsAway,
+        tournamentName,
+        finishedAt,
+      })
+      .onConflictDoUpdate({
+        target: [matchHistory.sourceMatchId, matchHistory.userId],
+        set: {
+          result: resultForSide(input.scoreAway, input.scoreHome),
+          goals: goalsAway,
+          tournamentName,
+          finishedAt,
+        },
+      });
+  }
 }

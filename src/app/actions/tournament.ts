@@ -4,8 +4,32 @@ import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
-import { goals, groups, matches, matchHistory, players, tournaments } from "@/db/schema";
+import {
+  goals,
+  groups,
+  matches,
+  matchHistory,
+  players,
+  tournaments,
+  user,
+} from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { upsertFinishedMatchSnapshot } from "@/lib/match-history";
+
+function revalidateTournamentSurfaces() {
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard");
+  revalidatePath("/matches");
+  revalidatePath("/classificacao");
+  revalidatePath("/profile");
+  revalidatePath("/profile", "layout");
+  revalidatePath("/knockout");
+  revalidatePath("/artilheria");
+  revalidatePath("/top-scorers");
+  revalidatePath("/standings");
+  revalidatePath("/players");
+  revalidatePath("/settings");
+}
 
 export interface PlayerInput {
   name: string;
@@ -133,6 +157,7 @@ export async function generateTournament(playerInputs: PlayerInput[]) {
     return { tournament, createdGroups };
   });
 
+  revalidateTournamentSurfaces();
   return result;
 }
 
@@ -140,21 +165,43 @@ export async function resetMatchScores(): Promise<{ success: true }> {
   await requireAdmin();
 
   await db.transaction(async (tx) => {
-    const idRows = await tx.select({ id: matches.id }).from(matches);
-    const ids = idRows.map((r) => r.id);
-    if (ids.length > 0) {
-      await tx
-        .delete(matchHistory)
-        .where(inArray(matchHistory.sourceMatchId, ids));
+    const activeRows = await tx
+      .select({ id: tournaments.id })
+      .from(tournaments)
+      .where(eq(tournaments.status, "ACTIVE"))
+      .limit(1);
+
+    const activeId = activeRows[0]?.id;
+    if (activeId == null) {
+      return;
     }
-    await tx.delete(goals);
+
+    const idRows = await tx
+      .select({ id: matches.id })
+      .from(matches)
+      .where(eq(matches.tournamentId, activeId));
+
+    const ids = idRows.map((r) => r.id);
+    if (ids.length === 0) {
+      return;
+    }
+
+    /**
+     * Remove snapshots só destas partidas (edição ACTIVE), para o perfil não
+     * ficar com V-E-D de jogos que voltaram a pendentes. O reset nuclear
+     * grava histórico antes de apagar o torneio — esse fluxo não passa aqui.
+     */
+    await tx
+      .delete(matchHistory)
+      .where(inArray(matchHistory.sourceMatchId, ids));
+    await tx.delete(goals).where(inArray(goals.matchId, ids));
     await tx
       .update(matches)
-      .set({ scoreHome: 0, scoreAway: 0, status: "PENDING" });
+      .set({ scoreHome: 0, scoreAway: 0, status: "PENDING" })
+      .where(inArray(matches.id, ids));
   });
 
-  revalidatePath("/", "layout");
-  revalidatePath("/profile", "layout");
+  revalidateTournamentSurfaces();
   return { success: true };
 }
 
@@ -173,16 +220,10 @@ export async function nuclearReset(): Promise<{ success: true }> {
       return;
     }
 
-    const matchIdRows = await tx
-      .select({ id: matches.id })
+    const allTournamentMatches = await tx
+      .select()
       .from(matches)
       .where(eq(matches.tournamentId, activeId));
-    const matchIds = matchIdRows.map((m) => m.id);
-
-    if (matchIds.length > 0) {
-      await tx.delete(goals).where(inArray(goals.matchId, matchIds));
-      await tx.delete(matches).where(eq(matches.tournamentId, activeId));
-    }
 
     const groupIdRows = await tx
       .select({ id: groups.id })
@@ -190,15 +231,118 @@ export async function nuclearReset(): Promise<{ success: true }> {
       .where(eq(groups.tournamentId, activeId));
     const groupIds = groupIdRows.map((g) => g.id);
 
+    const tournamentPlayerIds = new Set<number>();
+    for (const m of allTournamentMatches) {
+      tournamentPlayerIds.add(m.playerHomeId);
+      tournamentPlayerIds.add(m.playerAwayId);
+    }
     if (groupIds.length > 0) {
-      await tx.delete(players).where(inArray(players.groupId, groupIds));
+      const inGroup = await tx
+        .select({ id: players.id })
+        .from(players)
+        .where(inArray(players.groupId, groupIds));
+      for (const p of inGroup) {
+        tournamentPlayerIds.add(p.id);
+      }
+    }
+
+    const playerIdList = [...tournamentPlayerIds];
+    const invitedIds: number[] = [];
+    const veteranIds: number[] = [];
+
+    if (playerIdList.length > 0) {
+      const rows = await tx
+        .select({ id: players.id, userId: players.userId })
+        .from(players)
+        .where(inArray(players.id, playerIdList));
+
+      for (const r of rows) {
+        const uid = r.userId?.trim();
+        if (uid) veteranIds.push(r.id);
+        else invitedIds.push(r.id);
+      }
+    }
+
+    const finishedMatches = allTournamentMatches.filter(
+      (m) => m.status === "FINISHED",
+    );
+
+    for (const m of finishedMatches) {
+      await upsertFinishedMatchSnapshot(tx, {
+        matchId: m.id,
+        playerHomeId: m.playerHomeId,
+        playerAwayId: m.playerAwayId,
+        scoreHome: m.scoreHome,
+        scoreAway: m.scoreAway,
+      });
+    }
+
+    const matchIds = allTournamentMatches.map((m) => m.id);
+
+    if (matchIds.length > 0) {
+      await tx.delete(goals).where(inArray(goals.matchId, matchIds));
+      await tx.delete(matches).where(eq(matches.tournamentId, activeId));
+    }
+
+    if (invitedIds.length > 0) {
+      await tx.delete(players).where(inArray(players.id, invitedIds));
+    }
+
+    if (veteranIds.length > 0) {
+      const vets = await tx
+        .select({
+          id: players.id,
+          userId: players.userId,
+        })
+        .from(players)
+        .where(inArray(players.id, veteranIds));
+
+      const uids = [
+        ...new Set(
+          vets
+            .map((v) => v.userId?.trim())
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+
+      const namesByUserId = new Map<string, string>();
+      if (uids.length > 0) {
+        const urows = await tx
+          .select({ id: user.id, name: user.name })
+          .from(user)
+          .where(inArray(user.id, uids));
+        for (const u of urows) {
+          namesByUserId.set(u.id, u.name);
+        }
+      }
+
+      for (const v of vets) {
+        const uid = v.userId!.trim();
+        const displayName = namesByUserId.get(uid)?.trim() || "Jogador";
+        await tx
+          .update(players)
+          .set({
+            groupId: null,
+            teamName: "A definir",
+            teamLogo: null,
+            teamId: null,
+            name: displayName.slice(0, 255),
+          })
+          .where(eq(players.id, v.id));
+      }
+    }
+
+    if (groupIds.length > 0) {
+      await tx
+        .update(players)
+        .set({ groupId: null })
+        .where(inArray(players.groupId, groupIds));
       await tx.delete(groups).where(eq(groups.tournamentId, activeId));
     }
 
     await tx.delete(tournaments).where(eq(tournaments.id, activeId));
   });
 
-  revalidatePath("/", "layout");
-  revalidatePath("/profile", "layout");
+  revalidateTournamentSurfaces();
   return { success: true };
 }

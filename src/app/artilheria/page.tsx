@@ -1,12 +1,26 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 
 import { ScorersContent } from "@/components/top-scorers/scorers-content";
 import { db } from "@/db";
-import { goals, players } from "@/db/schema";
+import { goals, matches, players } from "@/db/schema";
+import { getActiveTournamentBundle } from "@/lib/active-tournament-data";
 import type { Scorer } from "@/lib/tournament-utils";
 
 export default async function ArtilheriaPage() {
-  const goalSum = sql<number>`coalesce(cast(sum(${goals.count}) as integer), 0)`;
+  const { activeTournament, players: rosterPlayers } =
+    await getActiveTournamentBundle();
+
+  if (!activeTournament || rosterPlayers.length === 0) {
+    return (
+      <div className="flex min-h-dvh flex-col pb-8">
+        <ScorersContent scorers={[]} />
+      </div>
+    );
+  }
+
+  const rosterIds = rosterPlayers.map((p) => p.id);
+  const tid = activeTournament.id;
+  const goalSum = sql<number>`coalesce(sum(case when ${matches.tournamentId} = ${tid} then ${goals.count} else 0 end), 0)::int`;
 
   const scorers: Scorer[] = await db
     .select({
@@ -19,6 +33,8 @@ export default async function ArtilheriaPage() {
     })
     .from(players)
     .leftJoin(goals, eq(goals.playerId, players.id))
+    .leftJoin(matches, eq(goals.matchId, matches.id))
+    .where(inArray(players.id, rosterIds))
     .groupBy(
       players.id,
       players.name,

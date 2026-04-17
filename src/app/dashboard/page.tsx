@@ -1,9 +1,7 @@
-import { asc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
-import { db } from "@/db";
-import { groups, matches, players, tournaments } from "@/db/schema";
+import { getActiveTournamentBundle } from "@/lib/active-tournament-data";
 import { isAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import {
@@ -17,29 +15,22 @@ export default async function DashboardPage() {
     headers: await headers(),
   });
 
-  const [allGroups, allPlayers, allMatches, activeTournamentRows] =
-    await Promise.all([
-      db.select().from(groups).orderBy(asc(groups.id)),
-      db.select().from(players),
-      db.select().from(matches).orderBy(asc(matches.id)),
-      db
-        .select()
-        .from(tournaments)
-        .where(eq(tournaments.status, "ACTIVE"))
-        .limit(1),
-    ]);
+  const {
+    activeTournament,
+    groups: allGroups,
+    players: allPlayers,
+    matches: allMatches,
+  } = await getActiveTournamentBundle();
 
-  const activeTournament = activeTournamentRows[0];
+  const hasActiveTournament = activeTournament != null;
+
   let canFinalizeTournament = false;
   if (activeTournament) {
-    const tMatches = allMatches.filter(
-      (m) => m.tournamentId === activeTournament.id,
-    );
     if (
-      tMatches.length > 0 &&
-      tMatches.every((m) => m.status === "FINISHED")
+      allMatches.length > 0 &&
+      allMatches.every((m) => m.status === "FINISHED")
     ) {
-      const finalKnockout = tMatches.find(
+      const finalKnockout = allMatches.find(
         (m) => m.type === "KNOCKOUT" && m.stage === "FINAL",
       );
       canFinalizeTournament = Boolean(finalKnockout);
@@ -77,6 +68,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-m3-background font-body text-on-surface selection:bg-m3-primary selection:text-on-primary">
       <DashboardContent
+        hasActiveTournament={hasActiveTournament}
         groups={groupsData}
         upcomingMatches={upcomingMatches}
         totalPending={pendingMatches.length}

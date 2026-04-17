@@ -77,9 +77,12 @@ type GroupedSection = {
 export function MatchesContent({
   matches,
   viewerIsAdmin,
+  hasActiveTournament = true,
 }: {
   matches: MatchCardData[];
   viewerIsAdmin: boolean;
+  /** Quando false, mostra estado vazio (sem campeonato ACTIVE). */
+  hasActiveTournament?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [search, setSearch] = useState("");
@@ -172,6 +175,25 @@ export function MatchesContent({
         </div>
       </header>
 
+      {!hasActiveTournament ? (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-outline-variant/10 bg-surface-container-low/40 py-16 text-center">
+          <MaterialSymbol
+            name="event_busy"
+            className="text-5xl text-m3-primary/50"
+          />
+          <div className="max-w-sm space-y-2 px-4">
+            <p className="font-headline text-lg font-bold text-on-surface">
+              Nenhum campeonato ativo
+            </p>
+            <p className="font-body text-sm text-on-surface-variant">
+              Quando um administrador iniciar uma nova Copa, as partidas
+              aparecerão aqui.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {hasActiveTournament ? (
       <section className="mb-8 space-y-4">
         <div className="relative">
           <MaterialSymbol
@@ -226,8 +248,9 @@ export function MatchesContent({
           })}
         </div>
       </section>
+      ) : null}
 
-      {groupedSections.length > 0 ? (
+      {hasActiveTournament && groupedSections.length > 0 ? (
         <motion.div
           key={`${activeTab}-${search}`}
           variants={stagger}
@@ -260,7 +283,7 @@ export function MatchesContent({
             </motion.section>
           ))}
         </motion.div>
-      ) : (
+      ) : hasActiveTournament ? (
         <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
           <MaterialSymbol
             name="search_off"
@@ -271,7 +294,7 @@ export function MatchesContent({
             {search.trim() ? " para esta busca" : ""}.
           </p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
