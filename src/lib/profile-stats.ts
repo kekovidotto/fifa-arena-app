@@ -1,7 +1,7 @@
 import { and, eq, inArray, or } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/db";
+import { aliasPlayers } from "@/db/alias";
 import { goals, matches, matchHistory, players, tournaments } from "@/db/schema";
 import {
   addResultToAccumulator,
@@ -62,8 +62,9 @@ export async function computeUserProfileStats(
     .limit(1);
 
   if (activeTournament) {
-    const ph = alias(players, "ph");
-    const pa = alias(players, "pa");
+    /* Em SQLite o alias usa dialect sqlite; `db` está tipado como PostgreSQL. */
+    const ph = aliasPlayers("ph") as typeof players;
+    const pa = aliasPlayers("pa") as typeof players;
 
     const liveRows = await db
       .select({

@@ -1,6 +1,6 @@
 "use server";
 
-import { asc, ilike, or } from "drizzle-orm";
+import { asc, like, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { user } from "@/db/schema";
@@ -14,7 +14,7 @@ export async function searchAppUsers(query: string) {
     return [] as { id: string; name: string; email: string; image: string | null }[];
   }
 
-  const pattern = `%${q}%`;
+  const pattern = `%${q.toLowerCase()}%`;
 
   const rows = await db
     .select({
@@ -24,7 +24,12 @@ export async function searchAppUsers(query: string) {
       image: user.image,
     })
     .from(user)
-    .where(or(ilike(user.name, pattern), ilike(user.email, pattern)))
+    .where(
+      or(
+        like(sql`lower(${user.name})`, pattern),
+        like(sql`lower(${user.email})`, pattern),
+      ),
+    )
     .orderBy(asc(user.name))
     .limit(12);
 

@@ -7,11 +7,14 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "db:seed:teams": "tsx src/db/seed-teams.ts"
+    "db:seed:teams": "tsx src/db/seed-teams.ts",
+    "db:push:sqlite": "drizzle-kit push --config drizzle.config.sqlite.ts",
+    "db:studio:sqlite": "drizzle-kit studio --config drizzle.config.sqlite.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.2",
     "@hookform/resolvers": "^5.2.2",
+    "better-sqlite3": "^12.6.0",
     "better-auth": "^1.6.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -36,6 +39,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",

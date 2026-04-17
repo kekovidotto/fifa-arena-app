@@ -20,7 +20,7 @@ export default async function ArtilheriaPage() {
 
   const rosterIds = rosterPlayers.map((p) => p.id);
   const tid = activeTournament.id;
-  const goalSum = sql<number>`coalesce(sum(case when ${matches.tournamentId} = ${tid} then ${goals.count} else 0 end), 0)::int`;
+  const goalSum = sql<number>`cast(coalesce(sum(case when ${matches.tournamentId} = ${tid} then ${goals.count} else 0 end), 0) as integer)`;
 
   const scorers: Scorer[] = await db
     .select({

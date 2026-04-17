@@ -27,7 +27,7 @@ async function totalGoalsForPlayerInTournament(
 ): Promise<number> {
   const rows = await db
     .select({
-      total: sql<number>`coalesce(sum(${goals.count}), 0)::int`,
+      total: sql<number>`cast(coalesce(sum(${goals.count}), 0) as integer)`,
     })
     .from(goals)
     .innerJoin(matches, eq(goals.matchId, matches.id))
@@ -117,7 +117,7 @@ export async function finalizeTournament() {
   const goalTotals = await db
     .select({
       playerId: goals.playerId,
-      total: sql<number>`coalesce(sum(${goals.count}), 0)::int`,
+      total: sql<number>`cast(coalesce(sum(${goals.count}), 0) as integer)`,
     })
     .from(goals)
     .innerJoin(matches, eq(goals.matchId, matches.id))
