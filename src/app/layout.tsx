@@ -70,6 +70,7 @@ export default async function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable} ${manrope.variable} antialiased`}
+        suppressHydrationWarning={true}
       >
         <AppChrome
           viewerIsAdmin={isAdmin(session?.user?.email)}
