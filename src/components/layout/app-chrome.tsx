@@ -194,11 +194,13 @@ export function AppChrome({
     pathname === "/signup" ||
     pathname === "/authentication";
 
+  const isHomeLanding = pathname === "/";
+
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  if (isAuthRoute) {
+  if (isAuthRoute || isHomeLanding) {
     return (
       <div className="flex min-h-dvh flex-col bg-m3-background">{children}</div>
     );
