@@ -1,10 +1,10 @@
 "use server";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
-import { groups, matches, players } from "@/db/schema";
+import { groups, matches, players, tournaments } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
 import {
   calculateStandings,
@@ -25,10 +25,24 @@ interface QualifiedPlayer {
 export async function generateKnockoutPhase() {
   await requireAdmin();
 
+  const [activeTournament] = await db
+    .select({ id: tournaments.id })
+    .from(tournaments)
+    .where(eq(tournaments.status, "ACTIVE"))
+    .limit(1);
+
+  if (!activeTournament) {
+    throw new Error("Nenhum campeonato ativo para gerar o mata-mata.");
+  }
+
+  const tournamentId = activeTournament.id;
+
   const existingKnockout = await db
     .select({ id: matches.id })
     .from(matches)
-    .where(eq(matches.type, "KNOCKOUT"))
+    .where(
+      and(eq(matches.type, "KNOCKOUT"), eq(matches.tournamentId, tournamentId)),
+    )
     .limit(1);
 
   if (existingKnockout.length > 0) {
@@ -38,7 +52,9 @@ export async function generateKnockoutPhase() {
   const groupMatchList = await db
     .select()
     .from(matches)
-    .where(eq(matches.type, "GROUP"));
+    .where(
+      and(eq(matches.type, "GROUP"), eq(matches.tournamentId, tournamentId)),
+    );
 
   if (groupMatchList.length === 0) {
     throw new Error("Nenhuma partida de grupo encontrada.");
@@ -49,15 +65,21 @@ export async function generateKnockoutPhase() {
     throw new Error("Ainda existem partidas da fase de grupos pendentes.");
   }
 
-  const [allGroups, allPlayers] = await Promise.all([
-    db.select().from(groups).orderBy(asc(groups.id)),
-    db.select().from(players),
-  ]);
+  const allGroups = await db
+    .select()
+    .from(groups)
+    .where(eq(groups.tournamentId, tournamentId))
+    .orderBy(asc(groups.id));
 
-  const tournamentId = allGroups[0]?.tournamentId;
-  if (!tournamentId) {
-    throw new Error("Torneio não encontrado para gerar o mata-mata.");
+  if (allGroups.length === 0) {
+    throw new Error("Torneio sem grupos configurados.");
   }
+
+  const groupIds = allGroups.map((g) => g.id);
+  const allPlayers = await db
+    .select()
+    .from(players)
+    .where(inArray(players.groupId, groupIds));
 
   const qualified: QualifiedPlayer[] = [];
   const thirdPlaced: QualifiedPlayer[] = [];

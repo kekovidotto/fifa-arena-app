@@ -3,7 +3,8 @@ import { getActiveTournamentBundle } from "@/lib/active-tournament-data";
 import { buildBracketRounds, buildMatchCards } from "@/lib/tournament-utils";
 
 export default async function KnockoutPage() {
-  const { groups, players, matches } = await getActiveTournamentBundle();
+  const { activeTournament, groups, players, matches } =
+    await getActiveTournamentBundle();
 
   const knockoutMatches = matches
     .filter((m) => m.type === "KNOCKOUT")
@@ -14,7 +15,11 @@ export default async function KnockoutPage() {
 
   return (
     <div className="flex min-h-dvh flex-col pb-8">
-      <BracketContent rounds={rounds} />
+      <BracketContent
+        rounds={rounds}
+        tournamentName={activeTournament?.name ?? null}
+        participantCount={players.length}
+      />
     </div>
   );
 }

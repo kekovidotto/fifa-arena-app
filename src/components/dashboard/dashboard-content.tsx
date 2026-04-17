@@ -479,8 +479,15 @@ function GenerateKnockoutCTA() {
 
   function handleGenerate() {
     startTransition(async () => {
-      await generateKnockoutPhase();
-      router.push("/knockout");
+      try {
+        await generateKnockoutPhase();
+        router.push("/knockout");
+        router.refresh();
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Não foi possível gerar o mata-mata.",
+        );
+      }
     });
   }
 
