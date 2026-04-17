@@ -181,7 +181,7 @@ export const goals = pgTable("goals", {
   count: integer("count").notNull().default(0),
 });
 
-/** Uma linha por usuário por partida finalizada (sobrevive ao reset do torneio ativo). */
+/** Uma linha por usuário por partida (consolidada na finalização oficial do torneio). */
 export const matchHistory = pgTable(
   "match_history",
   {

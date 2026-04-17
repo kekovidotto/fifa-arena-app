@@ -1,7 +1,6 @@
 "use server";
 
 import { eq, inArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import {
@@ -14,22 +13,7 @@ import {
   user,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
-import { upsertFinishedMatchSnapshot } from "@/lib/match-history";
-
-function revalidateTournamentSurfaces() {
-  revalidatePath("/", "layout");
-  revalidatePath("/dashboard");
-  revalidatePath("/matches");
-  revalidatePath("/classificacao");
-  revalidatePath("/profile");
-  revalidatePath("/profile", "layout");
-  revalidatePath("/knockout");
-  revalidatePath("/artilheria");
-  revalidatePath("/top-scorers");
-  revalidatePath("/standings");
-  revalidatePath("/players");
-  revalidatePath("/settings");
-}
+import { revalidateTournamentSurfaces } from "@/lib/revalidate-tournament-surfaces";
 
 export interface PlayerInput {
   name: string;
@@ -263,23 +247,12 @@ export async function nuclearReset(): Promise<{ success: true }> {
       }
     }
 
-    const finishedMatches = allTournamentMatches.filter(
-      (m) => m.status === "FINISHED",
-    );
-
-    for (const m of finishedMatches) {
-      await upsertFinishedMatchSnapshot(tx, {
-        matchId: m.id,
-        playerHomeId: m.playerHomeId,
-        playerAwayId: m.playerAwayId,
-        scoreHome: m.scoreHome,
-        scoreAway: m.scoreAway,
-      });
-    }
-
     const matchIds = allTournamentMatches.map((m) => m.id);
 
     if (matchIds.length > 0) {
+      await tx
+        .delete(matchHistory)
+        .where(inArray(matchHistory.sourceMatchId, matchIds));
       await tx.delete(goals).where(inArray(goals.matchId, matchIds));
       await tx.delete(matches).where(eq(matches.tournamentId, activeId));
     }

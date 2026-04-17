@@ -45,13 +45,24 @@ function Ms({
   );
 }
 
-/** Progresso do nível: resto do XP total por 1000 (mesma regra que `computeUserProfileStats` / `match_history`). */
+/** Progresso do nível: resto do XP total por 1000 (`xp-system` + `computeUserProfileStats`). */
 function profileXpBarTargetPercent(stats: UserProfileStats) {
   if (stats.xpForNextLevel <= 0) return 0;
   return Math.min(
     100,
     Math.max(0, (stats.xpIntoLevel / stats.xpForNextLevel) * 100),
   );
+}
+
+/** Frações do preenchimento da barra: esquerda = XP permanente, direita = XP pendente (torneio ativo). */
+function xpBarPendingSplit(stats: UserProfileStats, fillPct: number) {
+  if (stats.pendingXp <= 0 || stats.totalXp <= 0 || fillPct <= 0) {
+    return { permanentFillPct: fillPct, pendingFillPct: 0 };
+  }
+  const share = stats.pendingXp / stats.totalXp;
+  const pendingFillPct = fillPct * share;
+  const permanentFillPct = fillPct - pendingFillPct;
+  return { permanentFillPct, pendingFillPct };
 }
 
 interface ProfileContentProps {
@@ -99,7 +110,19 @@ export function ProfileContent({
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
     };
-  }, [user.id, stats.xpIntoLevel, stats.xpForNextLevel]);
+  }, [user.id, stats]);
+
+  const { permanentFillPct, pendingFillPct } = xpBarPendingSplit(
+    stats,
+    xpWidthPct,
+  );
+  const fillInner =
+    xpWidthPct > 0
+      ? {
+          permInnerPct: (permanentFillPct / xpWidthPct) * 100,
+          pendInnerPct: (pendingFillPct / xpWidthPct) * 100,
+        }
+      : { permInnerPct: 0, pendInnerPct: 0 };
 
   return (
     <div className="bg-m3-background text-on-surface min-h-dvh font-body">
@@ -180,14 +203,48 @@ export function ProfileContent({
           </div>
           <div className="h-3.5 w-full overflow-hidden rounded-full bg-[#030712]/90 shadow-inner ring-1 ring-blue-950/40">
             <div
-              className={cn(
-                "h-full max-w-full rounded-full bg-linear-to-r from-[#85adff] to-[#3B82F6]",
-                "transition-all duration-1000 ease-out",
-                "shadow-[0_0_14px_rgba(133,173,255,0.55),6px_0_22px_rgba(59,130,246,0.75),0_0_28px_rgba(59,130,246,0.35)]",
-              )}
+              className="flex h-full max-w-full overflow-hidden rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${xpWidthPct}%` }}
-            />
+            >
+              {pendingFillPct > 0 && permanentFillPct > 0 ? (
+                <>
+                  <div
+                    className={cn(
+                      "h-full min-w-0 shrink-0 rounded-l-full bg-linear-to-r from-[#85adff] to-[#3B82F6]",
+                      "shadow-[0_0_12px_rgba(133,173,255,0.45),0_0_20px_rgba(59,130,246,0.25)]",
+                    )}
+                    style={{ width: `${fillInner.permInnerPct}%` }}
+                  />
+                  <div
+                    className={cn(
+                      "h-full min-w-0 shrink-0 rounded-r-full bg-linear-to-r from-amber-400/95 to-amber-500",
+                      "shadow-[0_0_16px_rgba(251,191,36,0.55),0_0_28px_rgba(245,158,11,0.35)]",
+                    )}
+                    style={{ width: `${fillInner.pendInnerPct}%` }}
+                  />
+                </>
+              ) : pendingFillPct > 0 ? (
+                <div
+                  className={cn(
+                    "h-full w-full rounded-full bg-linear-to-r from-amber-400/95 to-amber-500",
+                    "shadow-[0_0_16px_rgba(251,191,36,0.55),0_0_28px_rgba(245,158,11,0.35)]",
+                  )}
+                />
+              ) : (
+                <div
+                  className={cn(
+                    "h-full w-full rounded-full bg-linear-to-r from-[#85adff] to-[#3B82F6]",
+                    "shadow-[0_0_14px_rgba(133,173,255,0.55),6px_0_22px_rgba(59,130,246,0.75),0_0_28px_rgba(59,130,246,0.35)]",
+                  )}
+                />
+              )}
+            </div>
           </div>
+          {stats.pendingXp > 0 ? (
+            <p className="text-center font-label text-[10px] font-semibold uppercase tracking-widest text-amber-400/90">
+              +{stats.pendingXp} XP do campeonato atual (não confirmado)
+            </p>
+          ) : null}
           <p className="text-center font-label text-[10px] font-bold uppercase tracking-[0.2em] text-m3-primary">
             {stats.levelTitle}
           </p>

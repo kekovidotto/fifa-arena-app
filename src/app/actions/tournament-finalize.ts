@@ -1,7 +1,6 @@
 "use server";
 
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import {
@@ -14,6 +13,7 @@ import {
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
 import { upsertFinishedMatchSnapshot } from "@/lib/match-history";
+import { revalidateTournamentSurfaces } from "@/lib/revalidate-tournament-surfaces";
 
 type AchievementType =
   | "CHAMPION"
@@ -180,10 +180,5 @@ export async function finalizeTournament() {
       .where(eq(tournaments.id, active.id));
   });
 
-  revalidatePath("/", "layout");
-  revalidatePath("/dashboard");
-  revalidatePath("/matches");
-  revalidatePath("/classificacao");
-  revalidatePath("/profile");
-  revalidatePath("/profile", "layout");
+  revalidateTournamentSurfaces();
 }

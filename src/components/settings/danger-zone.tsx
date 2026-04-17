@@ -65,10 +65,10 @@ export function DangerZone() {
                 Apagar Campeonato Completo
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Salva partidas finalizadas em{" "}
-                <strong className="text-white">match_history</strong>, apaga o
-                torneio <strong className="text-white">ACTIVE</strong> e limpa
-                a edição. Convidados sem conta somem; quem tem conta fica no
+                Apaga partidas e o torneio <strong className="text-white">ACTIVE</strong>{" "}
+                sem gravar em <strong className="text-white">match_history</strong>: o
+                XP “ao vivo” desta edição some e o perfil volta ao XP já
+                consolidado. Convidados sem conta somem; quem tem conta fica no
                 banco para reconvite. Troféus e contas não são removidos.
               </p>
             </div>
@@ -192,13 +192,12 @@ function ConfirmNuclearModal({ onClose }: { onClose: () => void }) {
         Apagar Campeonato?
       </h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Antes de apagar, as partidas finalizadas são salvas em{" "}
-        <span className="text-white/90">match_history</span> (por usuário
-        vinculado, sem duplicar XP). Em seguida remove gols, partidas, grupos e
-        o torneio <span className="text-white/90">ACTIVE</span>. Participantes
-        sem conta são excluídos; quem tem <span className="text-white/90">userId</span>{" "}
-        permanece com dados de edição limpos para um novo convite. Troféus e
-        contas não são removidos.
+        Remove gols, partidas, grupos e o torneio{" "}
+        <span className="text-white/90">ACTIVE</span> sem consolidar XP em{" "}
+        <span className="text-white/90">match_history</span>: o progresso desta
+        edição deixa de contar no perfil. Participantes sem conta são excluídos;
+        quem tem <span className="text-white/90">userId</span> permanece com dados
+        de edição limpos para um novo convite. Troféus e contas não são removidos.
       </p>
       <p className="mt-1 text-xs font-semibold text-red-400">
         Esta ação não pode ser desfeita.
