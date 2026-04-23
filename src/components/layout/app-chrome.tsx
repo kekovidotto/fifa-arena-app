@@ -370,7 +370,27 @@ export function AppChrome({
         </div>
 
         <div className="shrink-0 pl-2">
-          {image ? (
+          {userId ? (
+            <Link
+              href={`/profile/${userId}`}
+              aria-label="Ir para meu perfil"
+              className="block rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-m3-primary focus-visible:ring-offset-2 focus-visible:ring-offset-m3-background"
+            >
+              {image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={image}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="size-10 rounded-full border-2 border-m3-primary/20 object-cover p-0.5"
+                />
+              ) : (
+                <div className="flex size-10 items-center justify-center rounded-full border-2 border-m3-primary/20 bg-surface-container-highest font-headline text-sm font-bold text-m3-primary">
+                  {displayName.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+            </Link>
+          ) : image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={image}
