@@ -63,7 +63,7 @@ export default async function DashboardPage() {
     allGroups,
   );
 
-  const viewerIsAdmin = isAdmin(session?.user?.email);
+  const viewerIsAdmin = await isAdmin(session?.user?.id);
 
   return (
     <div className="flex min-h-dvh flex-col bg-m3-background font-body text-on-surface selection:bg-m3-primary selection:text-on-primary">

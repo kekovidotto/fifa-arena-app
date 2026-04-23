@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AdminGuard } from "@/components/admin-guard";
 import { DangerZone } from "@/components/settings/danger-zone";
+import { isAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 
 export default async function SettingsPage() {
@@ -12,6 +13,10 @@ export default async function SettingsPage() {
 
   if (!session) {
     redirect("/login");
+  }
+  const viewerIsAdmin = await isAdmin(session.user.id);
+  if (!viewerIsAdmin) {
+    redirect("/dashboard");
   }
 
   return (
@@ -27,6 +32,7 @@ export default async function SettingsPage() {
         </header>
 
         <AdminGuard
+          isAdmin={viewerIsAdmin}
           fallback={
             <div className="glass-card rounded-xl p-6 text-center">
               <p className="text-sm text-muted-foreground">

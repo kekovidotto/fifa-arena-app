@@ -51,6 +51,7 @@ export default async function RootLayout({
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+  const viewerIsAdmin = await isAdmin(session?.user?.id);
 
   return (
     <html lang="pt-BR">
@@ -73,7 +74,7 @@ export default async function RootLayout({
         suppressHydrationWarning={true}
       >
         <AppChrome
-          viewerIsAdmin={isAdmin(session?.user?.email)}
+          viewerIsAdmin={viewerIsAdmin}
           viewerUserId={session?.user?.id ?? null}
         >
           {children}

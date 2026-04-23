@@ -1,9 +1,12 @@
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { MatchForm } from "@/components/match/match-form";
 import { db } from "@/db";
 import { groups, matches, players } from "@/db/schema";
+import { isAdmin } from "@/lib/admin";
+import { auth } from "@/lib/auth";
 
 export default async function MatchPage({
   params,
@@ -27,6 +30,10 @@ export default async function MatchPage({
   ]);
 
   if (!homePlayer || !awayPlayer) notFound();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const viewerIsAdmin = await isAdmin(session?.user?.id);
 
   let groupName = "";
   if (match.groupId) {
@@ -59,6 +66,7 @@ export default async function MatchPage({
           name: awayPlayer.name,
           teamName: awayPlayer.teamName,
         }}
+        viewerIsAdmin={viewerIsAdmin}
       />
     </div>
   );

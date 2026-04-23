@@ -15,7 +15,7 @@ export default async function MatchesPage() {
     await getActiveTournamentBundle();
 
   const matchCards = buildMatchCards(matches, players, groups);
-  const viewerIsAdmin = isAdmin(session?.user?.email);
+  const viewerIsAdmin = await isAdmin(session?.user?.id);
 
   return (
     <div className="flex min-h-dvh flex-col bg-m3-background pb-12 font-body text-on-surface selection:bg-m3-primary selection:text-on-primary">

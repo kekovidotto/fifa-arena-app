@@ -341,7 +341,7 @@ export function AppChrome({
                   ) : null}
 
                   {viewerIsAdmin ? (
-                    <AdminGuard fallback={null} compactPending>
+                    <AdminGuard fallback={null} isAdmin={viewerIsAdmin}>
                       <div>
                         <NavSectionTitle>Área do admin</NavSectionTitle>
                         <div className="space-y-1.5">

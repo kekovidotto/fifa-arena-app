@@ -1,10 +1,19 @@
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+
+import { db } from "@/db";
+import { user } from "@/db/schema";
 
 import { auth } from "./auth";
 
-export function isAdmin(email: string | undefined | null): boolean {
-  if (!email) return false;
-  return email === process.env.ADMIN_EMAIL;
+export async function isAdmin(userId: string | undefined | null): Promise<boolean> {
+  if (!userId) return false;
+  const [dbUser] = await db
+    .select({ role: user.role })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return dbUser?.role === "ADMIN";
 }
 
 export async function requireAdmin() {
@@ -12,7 +21,7 @@ export async function requireAdmin() {
     headers: await headers(),
   });
 
-  if (!session?.user?.email || !isAdmin(session.user.email)) {
+  if (!session?.user?.id || !(await isAdmin(session.user.id))) {
     throw new Error("Ação não permitida para este usuário.");
   }
 

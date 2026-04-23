@@ -36,9 +36,15 @@ interface MatchFormProps {
   };
   homePlayer: PlayerInfo;
   awayPlayer: PlayerInfo;
+  viewerIsAdmin: boolean;
 }
 
-export function MatchForm({ match, homePlayer, awayPlayer }: MatchFormProps) {
+export function MatchForm({
+  match,
+  homePlayer,
+  awayPlayer,
+  viewerIsAdmin,
+}: MatchFormProps) {
   const [scoreHome, setScoreHome] = useState(match.scoreHome);
   const [scoreAway, setScoreAway] = useState(match.scoreAway);
   const [isEditing, setIsEditing] = useState(match.status === "PENDING");
@@ -181,7 +187,7 @@ export function MatchForm({ match, homePlayer, awayPlayer }: MatchFormProps) {
         </div>
 
         <div className="mt-12 flex flex-col gap-4">
-          <AdminGuard>
+          <AdminGuard isAdmin={viewerIsAdmin}>
             {isEditing ? (
               <button
                 type="button"
@@ -212,7 +218,7 @@ export function MatchForm({ match, homePlayer, awayPlayer }: MatchFormProps) {
       </main>
 
       {/* Bottom confirm (task-focused shell from layout HTML) */}
-      <AdminGuard>
+      <AdminGuard isAdmin={viewerIsAdmin}>
         {isEditing ? (
           <div className="pointer-events-none fixed bottom-0 z-50 flex w-full justify-center p-6 pb-8">
             <button

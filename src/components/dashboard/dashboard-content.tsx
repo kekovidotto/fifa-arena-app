@@ -201,6 +201,7 @@ export function DashboardContent({
       <motion.section variants={fadeUp} className="space-y-6">
         {groupPhaseComplete && !knockoutExists ? (
           <AdminGuard
+            isAdmin={viewerIsAdmin}
             fallback={
               <div className="arena-glass-card rounded-2xl border border-outline-variant/10 p-8 text-center">
                 <MaterialSymbol
@@ -254,7 +255,7 @@ export function DashboardContent({
 
       {hasActiveTournament && canFinalizeTournament ? (
         <motion.div variants={fadeUp}>
-          <AdminGuard>
+          <AdminGuard isAdmin={viewerIsAdmin}>
             <FinalizeTournamentCTA />
           </AdminGuard>
         </motion.div>
@@ -684,7 +685,7 @@ function UpcomingMatchCard({ match }: { match: MatchCardData }) {
         </div>
       </div>
 
-      <AdminGuard>
+      <AdminGuard isAdmin={viewerIsAdmin}>
         <span className="flex w-full items-center justify-center rounded-xl bg-surface-container-highest py-4 font-label text-[10px] font-extrabold uppercase tracking-[0.2em] text-on-surface-variant">
           Lançar placar
         </span>

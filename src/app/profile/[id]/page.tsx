@@ -63,8 +63,7 @@ export default async function ProfilePage({
     const t = row.type as AchievementType;
     achievementCounts[t] += 1;
   }
-  const viewerIsAdmin =
-    session?.user?.email != null && isAdmin(session.user.email);
+  const viewerIsAdmin = await isAdmin(session?.user?.id);
   const canViewEmail = Boolean(
     session?.user?.id &&
       (session.user.id === id || viewerIsAdmin),

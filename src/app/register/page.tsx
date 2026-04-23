@@ -16,7 +16,7 @@ export default async function RegisterPage() {
     redirect("/login");
   }
 
-  if (!isAdmin(session.user.email)) {
+  if (!(await isAdmin(session.user.id))) {
     redirect("/dashboard");
   }
 
