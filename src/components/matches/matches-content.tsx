@@ -366,24 +366,20 @@ function TeamBadge({
 
   return (
     <div
-      className={cn("flex w-5/12 items-center gap-2", isRight && "justify-end text-right")}
+      className={cn(
+        "flex min-w-0 flex-1 basis-0 flex-col gap-1.5",
+        isRight ? "items-end text-right" : "items-start text-left",
+      )}
     >
-      {!isRight ? (
-        <TeamShield logoUrl={logoUrl} label={team} className="size-11 rounded-lg" />
-      ) : null}
-
-      <div className="min-w-0 overflow-hidden">
-        <p className="mb-1 font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+      <TeamShield logoUrl={logoUrl} label={team} className="size-11 rounded-lg" />
+      <div className="w-full min-w-0">
+        <p className="mb-0.5 font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
           {role}
         </p>
-        <h3 className="truncate font-headline text-sm font-bold uppercase tracking-tight text-on-surface">
+        <h3 className="line-clamp-2 wrap-break-word font-headline text-xs font-bold uppercase leading-tight tracking-tight text-on-surface">
           {name}
         </h3>
       </div>
-
-      {isRight ? (
-        <TeamShield logoUrl={logoUrl} label={team} className="size-11 rounded-lg" />
-      ) : null}
     </div>
   );
 }
@@ -444,7 +440,7 @@ function MatchRowCard({
         !isPending && "border-l-m3-primary/25",
       )}
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-start justify-between gap-1">
         <TeamBadge
           role="Casa"
           name={match.homePlayer.teamName}
