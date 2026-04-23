@@ -178,8 +178,9 @@ export function AppChrome({
   const pathname = usePathname();
   const { data: session } = authClient.useSession();
   const [open, setOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
-  const user = session?.user;
+  const user = hydrated ? session?.user : undefined;
   const userId = user?.id ?? viewerUserId ?? null;
   const displayName =
     user?.name?.trim() ||
@@ -199,6 +200,10 @@ export function AppChrome({
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   if (isAuthRoute || isHomeLanding) {
     return (
