@@ -204,7 +204,11 @@ export async function advanceKnockoutWinner(finishedMatchId: number) {
     .select()
     .from(matches)
     .where(
-      and(eq(matches.type, "KNOCKOUT"), eq(matches.stage, finished.stage)),
+      and(
+        eq(matches.type, "KNOCKOUT"),
+        eq(matches.stage, finished.stage),
+        eq(matches.tournamentId, finished.tournamentId),
+      ),
     )
     .orderBy(asc(matches.id));
 
@@ -232,7 +236,13 @@ export async function advanceKnockoutWinner(finishedMatchId: number) {
   const nextStageMatches = await db
     .select()
     .from(matches)
-    .where(and(eq(matches.type, "KNOCKOUT"), eq(matches.stage, nextStage)));
+    .where(
+      and(
+        eq(matches.type, "KNOCKOUT"),
+        eq(matches.stage, nextStage),
+        eq(matches.tournamentId, finished.tournamentId),
+      ),
+    );
 
   const pairIdx = Math.floor(pos / 2);
   if (pairIdx < nextStageMatches.length) return;
@@ -244,6 +254,85 @@ export async function advanceKnockoutWinner(finishedMatchId: number) {
     stage: nextStage,
     status: "PENDING",
     tournamentId: finished.tournamentId,
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/matches");
+  revalidatePath("/knockout");
+}
+
+/**
+ * Cria a partida de Final em falta (ex.: após bug antigo em advanceKnockoutWinner).
+ * Exige duas semifinais finalizadas e nenhuma Final já existente no torneio ativo.
+ */
+export async function repairKnockoutFinalIfMissing() {
+  await requireAdmin();
+
+  const [activeTournament] = await db
+    .select({ id: tournaments.id })
+    .from(tournaments)
+    .where(eq(tournaments.status, "ACTIVE"))
+    .limit(1);
+
+  if (!activeTournament) {
+    throw new Error("Nenhum campeonato ativo.");
+  }
+
+  const tournamentId = activeTournament.id;
+
+  const existingFinal = await db
+    .select({ id: matches.id })
+    .from(matches)
+    .where(
+      and(
+        eq(matches.tournamentId, tournamentId),
+        eq(matches.type, "KNOCKOUT"),
+        eq(matches.stage, "FINAL"),
+      ),
+    )
+    .limit(1);
+
+  if (existingFinal.length > 0) {
+    throw new Error("A final já existe neste campeonato.");
+  }
+
+  const semiRows = await db
+    .select()
+    .from(matches)
+    .where(
+      and(
+        eq(matches.tournamentId, tournamentId),
+        eq(matches.type, "KNOCKOUT"),
+        eq(matches.stage, "SEMI"),
+      ),
+    )
+    .orderBy(asc(matches.id));
+
+  if (semiRows.length !== 2) {
+    throw new Error("É necessário haver exatamente duas semifinais no chaveamento.");
+  }
+
+  const [evenMatch, oddMatch] = semiRows;
+  if (evenMatch.status !== "FINISHED" || oddMatch.status !== "FINISHED") {
+    throw new Error("As duas semifinais precisam estar finalizadas.");
+  }
+
+  const winnerEven =
+    evenMatch.scoreHome > evenMatch.scoreAway
+      ? evenMatch.playerHomeId
+      : evenMatch.playerAwayId;
+  const winnerOdd =
+    oddMatch.scoreHome > oddMatch.scoreAway
+      ? oddMatch.playerHomeId
+      : oddMatch.playerAwayId;
+
+  await db.insert(matches).values({
+    playerHomeId: winnerEven,
+    playerAwayId: winnerOdd,
+    type: "KNOCKOUT",
+    stage: "FINAL",
+    status: "PENDING",
+    tournamentId,
   });
 
   revalidatePath("/dashboard");

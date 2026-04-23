@@ -56,6 +56,15 @@ export default async function DashboardPage() {
   const knockoutMatchList = allMatches.filter((m) => m.type === "KNOCKOUT");
   const knockoutExists = knockoutMatchList.length > 0;
 
+  const hasFinalMatch = allMatches.some(
+    (m) => m.type === "KNOCKOUT" && m.stage === "FINAL",
+  );
+  const knockoutMissingFinal =
+    knockoutExists &&
+    allMatches.length > 0 &&
+    allMatches.every((m) => m.status === "FINISHED") &&
+    !hasFinalMatch;
+
   const pendingMatches = allMatches.filter((m) => m.status === "PENDING");
   const upcomingMatches = buildMatchCards(
     pendingMatches.slice(0, 4),
@@ -74,6 +83,7 @@ export default async function DashboardPage() {
         totalPending={pendingMatches.length}
         groupPhaseComplete={groupPhaseComplete}
         knockoutExists={knockoutExists}
+        knockoutMissingFinal={knockoutMissingFinal}
         canFinalizeTournament={canFinalizeTournament}
         viewerIsAdmin={viewerIsAdmin}
       />

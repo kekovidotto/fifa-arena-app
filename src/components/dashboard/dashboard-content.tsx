@@ -7,7 +7,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { generateKnockoutPhase } from "@/app/actions/knockout";
+import {
+  generateKnockoutPhase,
+  repairKnockoutFinalIfMissing,
+} from "@/app/actions/knockout";
 import { finalizeTournament } from "@/app/actions/tournament-finalize";
 import { AdminGuard } from "@/components/admin-guard";
 import {
@@ -34,6 +37,8 @@ interface DashboardContentProps {
   totalPending: number;
   groupPhaseComplete: boolean;
   knockoutExists: boolean;
+  /** Mata-mata com todas as partidas lançadas mas sem registo de Final (estado inconsistente). */
+  knockoutMissingFinal: boolean;
   canFinalizeTournament: boolean;
   viewerIsAdmin: boolean;
 }
@@ -84,6 +89,7 @@ export function DashboardContent({
   totalPending,
   groupPhaseComplete,
   knockoutExists,
+  knockoutMissingFinal,
   canFinalizeTournament,
   viewerIsAdmin,
 }: DashboardContentProps) {
@@ -226,6 +232,27 @@ export function DashboardContent({
             knockoutExists={knockoutExists}
             viewerIsAdmin={viewerIsAdmin}
           />
+        ) : knockoutMissingFinal ? (
+          <AdminGuard
+            isAdmin={viewerIsAdmin}
+            fallback={
+              <div className="arena-glass-card rounded-2xl border border-m3-error/20 p-8 text-center">
+                <MaterialSymbol
+                  name="error"
+                  className="mx-auto mb-3 text-4xl text-m3-error"
+                />
+                <p className="font-headline text-lg font-bold text-on-surface">
+                  Final do mata-mata em falta
+                </p>
+                <p className="mt-2 font-body text-sm text-on-surface-variant">
+                  Todas as partidas foram lançadas, mas a final não foi gerada.
+                  Peça ao administrador para corrigir o chaveamento.
+                </p>
+              </div>
+            }
+          >
+            <RepairKnockoutFinalCTA />
+          </AdminGuard>
         ) : knockoutExists ? (
           <TournamentComplete />
         ) : (
@@ -527,6 +554,68 @@ function GenerateKnockoutCTA() {
             <>
               <MaterialSymbol name="swords" className="text-xl" />
               Gerar fase final
+            </>
+          )}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function RepairKnockoutFinalCTA() {
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  function handleRepair() {
+    startTransition(async () => {
+      try {
+        await repairKnockoutFinalIfMissing();
+        toast.success("Final criada. Podes lançar o placar na partida.");
+        router.push("/knockout");
+        router.refresh();
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Não foi possível criar a final.",
+        );
+      }
+    });
+  }
+
+  return (
+    <motion.div
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className="arena-glass-card overflow-hidden rounded-2xl border border-m3-error/25"
+    >
+      <div className="p-8 text-center">
+        <MaterialSymbol
+          name="sports_soccer"
+          className="mx-auto mb-3 text-5xl text-m3-secondary"
+        />
+        <p className="font-headline text-lg font-bold text-on-surface">
+          Final do mata-mata em falta
+        </p>
+        <p className="mt-2 font-body text-sm text-on-surface-variant">
+          As semifinais já têm placar, mas a partida de final não foi gerada.
+          Podes criá-la agora com os vencedores das duas meias-finais.
+        </p>
+      </div>
+      <div className="px-4 pb-6">
+        <button
+          type="button"
+          onClick={handleRepair}
+          disabled={isPending}
+          className="arena-neon-glow flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-m3-primary to-primary-container py-4 font-headline text-sm font-black uppercase tracking-widest text-on-primary-container transition-all active:scale-[0.98] disabled:opacity-60"
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="size-5 animate-spin" />
+              A criar…
+            </>
+          ) : (
+            <>
+              <MaterialSymbol name="emoji_events" className="text-xl" />
+              Gerar final em falta
             </>
           )}
         </button>
