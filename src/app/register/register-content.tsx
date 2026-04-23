@@ -407,8 +407,11 @@ export function RegisterContent({
                           <span className="truncate">{player.team}</span>
                         </p>
                         {player.linkedLabel && (
-                          <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate font-body text-[10px] text-m3-secondary/90">
-                            <MaterialSymbol name="link" className="size-3 shrink-0" />
+                          <p className="mt-0.5 flex min-w-0 items-center gap-1 font-body text-[10px] text-m3-secondary/90">
+                            <MaterialSymbol
+                              name="link"
+                              className="shrink-0 text-[12px] leading-none"
+                            />
                             <span className="truncate">{player.linkedLabel}</span>
                           </p>
                         )}
