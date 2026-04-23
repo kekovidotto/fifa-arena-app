@@ -10,11 +10,13 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import type { TeamLibraryRow } from "@/app/actions/teams";
 import { generateTournament } from "@/app/actions/tournament";
 import { searchAppUsers } from "@/app/actions/users";
 import { TeamAutocomplete } from "@/components/register/team-autocomplete";
+import { normalizeTeamKey } from "@/lib/lobby-player-uniqueness";
 import { cn } from "@/lib/utils";
 
 interface LobbyPlayer {
@@ -112,6 +114,19 @@ export function RegisterContent({
 
   function addPlayer() {
     if (!canAdd) return;
+
+    const uid = linkedUserId?.trim();
+    if (uid && players.some((p) => p.userId?.trim() === uid)) {
+      toast.error("Esta conta já está na lista de inscritos.");
+      return;
+    }
+
+    const nextTeamKey = normalizeTeamKey(teamName);
+    if (players.some((p) => normalizeTeamKey(p.team) === nextTeamKey)) {
+      toast.error("Este time já foi escolhido por outro inscrito.");
+      return;
+    }
+
     setPlayers((prev) => [
       ...prev,
       {
@@ -145,16 +160,24 @@ export function RegisterContent({
   function handleGenerate() {
     if (!canGenerate) return;
     startTransition(async () => {
-      await generateTournament(
-        players.map((p) => ({
-          name: p.name,
-          team: p.team,
-          userId: p.userId ?? undefined,
-          teamLogo: p.teamLogo ?? null,
-          teamLibraryId: p.teamLibraryId ?? null,
-        })),
-      );
-      router.push("/dashboard");
+      try {
+        await generateTournament(
+          players.map((p) => ({
+            name: p.name,
+            team: p.team,
+            userId: p.userId ?? undefined,
+            teamLogo: p.teamLogo ?? null,
+            teamLibraryId: p.teamLibraryId ?? null,
+          })),
+        );
+        router.push("/dashboard");
+      } catch (e) {
+        toast.error(
+          e instanceof Error
+            ? e.message
+            : "Não foi possível gerar o torneio. Tente de novo.",
+        );
+      }
     });
   }
 

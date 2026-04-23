@@ -13,6 +13,7 @@ import {
   user,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { assertUniqueLobbyPlayers } from "@/lib/lobby-player-uniqueness";
 import { revalidateTournamentSurfaces } from "@/lib/revalidate-tournament-surfaces";
 
 export interface PlayerInput {
@@ -49,6 +50,8 @@ export async function generateTournament(playerInputs: PlayerInput[]) {
   if (playerInputs.length < 4) {
     throw new Error("O torneio precisa de no mínimo 4 jogadores.");
   }
+
+  assertUniqueLobbyPlayers(playerInputs);
 
   const active = await db
     .select({ id: tournaments.id })
