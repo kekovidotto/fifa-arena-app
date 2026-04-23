@@ -7,13 +7,13 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateOwnAvatar } from "@/app/actions/profile";
-import { AVATAR_CATALOG } from "@/constants/avatar-catalog";
 import { GrantTrophyDialog } from "@/components/profile/grant-trophy-dialog";
 import { TrophyRoomGrid } from "@/components/profile/trophy-room-grid";
+import { AVATAR_CATALOG } from "@/constants/avatar-catalog";
 import type { AchievementType } from "@/lib/achievement-types";
 import type { UserProfileStats } from "@/lib/profile-stats";
-import { lolRankFromLevel } from "@/lib/xp-system";
 import { cn } from "@/lib/utils";
+import { lolRankFromLevel } from "@/lib/xp-system";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },

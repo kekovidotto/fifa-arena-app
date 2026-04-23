@@ -3,8 +3,13 @@ import { isSqliteDatabaseUrl } from "@/db/driver";
 
 /**
  * Transação Drizzle em modo SQLite (`better-sqlite3`): encadeamento síncrono
- * com `.run()` / `.all()` / `.get()` no fim do builder (tipagem relaxada).
+ * com `.run()` / `.all()` / `.get()` no fim do builder.
+ *
+ * O retorno precisa ser permissivo: `@/db/schema` unifica tabelas com tipos de
+ * coluna PostgreSQL, enquanto o driver SQLite usa outro conjunto de tipos Drizzle
+ * — alinhar isso em TypeScript exigiria duplicar imports ou casts em massa.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- ver JSDoc acima
 export function asSqliteTx(tx: unknown): any {
   return tx;
 }

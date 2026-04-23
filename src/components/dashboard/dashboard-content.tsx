@@ -224,6 +224,7 @@ export function DashboardContent({
             matches={upcomingMatches}
             totalPending={totalPending}
             knockoutExists={knockoutExists}
+            viewerIsAdmin={viewerIsAdmin}
           />
         ) : knockoutExists ? (
           <TournamentComplete />
@@ -538,10 +539,12 @@ function UpcomingMatchesSection({
   matches,
   totalPending,
   knockoutExists,
+  viewerIsAdmin,
 }: {
   matches: MatchCardData[];
   totalPending: number;
   knockoutExists: boolean;
+  viewerIsAdmin: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -597,7 +600,11 @@ function UpcomingMatchesSection({
         className="no-scrollbar flex snap-x gap-6 overflow-x-auto pb-2"
       >
         {matches.map((match) => (
-          <UpcomingMatchCard key={match.id} match={match} />
+          <UpcomingMatchCard
+            key={match.id}
+            match={match}
+            viewerIsAdmin={viewerIsAdmin}
+          />
         ))}
       </div>
 
@@ -623,7 +630,13 @@ function matchRoundLabel(match: MatchCardData) {
   return match.groupName || "Grupo";
 }
 
-function UpcomingMatchCard({ match }: { match: MatchCardData }) {
+function UpcomingMatchCard({
+  match,
+  viewerIsAdmin,
+}: {
+  match: MatchCardData;
+  viewerIsAdmin: boolean;
+}) {
   const isKnockout = match.type === "KNOCKOUT";
   return (
     <Link
