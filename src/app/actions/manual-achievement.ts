@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/db";
+import { asSqliteTx, runTransaction } from "@/db/run-transaction";
 import { achievements, tournaments } from "@/db/schema";
 import {
   ACHIEVEMENT_TYPES,
@@ -29,20 +30,41 @@ export async function grantManualAchievement(input: unknown) {
   const parsed = grantSchema.parse(input);
 
   try {
-    await db.transaction(async (tx) => {
-      const [tournament] = await tx
-        .insert(tournaments)
-        .values({
-          name: parsed.tournamentName,
-          status: "FINISHED",
-        })
-        .returning();
+    await runTransaction({
+      sqlite: (tx) => {
+        const t = asSqliteTx(tx);
+        const rows = t
+          .insert(tournaments)
+          .values({
+            name: parsed.tournamentName,
+            status: "FINISHED",
+          })
+          .returning()
+          .all();
+        const tournament = rows[0];
+        if (!tournament) throw new Error("Falha ao criar torneio.");
+        t.insert(achievements).values({
+          userId: parsed.userId,
+          tournamentId: tournament.id,
+          type: parsed.type as AchievementType,
+        }).run();
+      },
+      postgres: async (tx) => {
+        const t = tx as typeof db;
+        const [tournament] = await t
+          .insert(tournaments)
+          .values({
+            name: parsed.tournamentName,
+            status: "FINISHED",
+          })
+          .returning();
 
-      await tx.insert(achievements).values({
-        userId: parsed.userId,
-        tournamentId: tournament.id,
-        type: parsed.type as AchievementType,
-      });
+        await t.insert(achievements).values({
+          userId: parsed.userId,
+          tournamentId: tournament.id,
+          type: parsed.type as AchievementType,
+        });
+      },
     });
   } catch (e: unknown) {
     const code =

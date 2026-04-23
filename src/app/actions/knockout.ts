@@ -4,6 +4,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
+import { asSqliteTx, runTransaction } from "@/db/run-transaction";
 import { groups, matches, players, tournaments } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
 import {
@@ -143,17 +144,33 @@ export async function generateKnockoutPhase() {
     });
   }
 
-  await db.transaction(async (tx) => {
-    for (const pair of pairs) {
-      await tx.insert(matches).values({
-        playerHomeId: pair.home,
-        playerAwayId: pair.away,
-        type: "KNOCKOUT",
-        stage: firstRoundStage,
-        status: "PENDING",
-        tournamentId,
-      });
-    }
+  await runTransaction({
+    sqlite: (tx) => {
+      const t = asSqliteTx(tx);
+      for (const pair of pairs) {
+        t.insert(matches).values({
+          playerHomeId: pair.home,
+          playerAwayId: pair.away,
+          type: "KNOCKOUT",
+          stage: firstRoundStage,
+          status: "PENDING",
+          tournamentId,
+        }).run();
+      }
+    },
+    postgres: async (tx) => {
+      const t = tx as typeof db;
+      for (const pair of pairs) {
+        await t.insert(matches).values({
+          playerHomeId: pair.home,
+          playerAwayId: pair.away,
+          type: "KNOCKOUT",
+          stage: firstRoundStage,
+          status: "PENDING",
+          tournamentId,
+        });
+      }
+    },
   });
 
   revalidatePath("/dashboard");

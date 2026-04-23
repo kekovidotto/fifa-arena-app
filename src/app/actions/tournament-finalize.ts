@@ -3,6 +3,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
+import { asSqliteTx, runTransaction } from "@/db/run-transaction";
 import {
   achievements,
   goals,
@@ -12,7 +13,10 @@ import {
   tournaments,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
-import { upsertFinishedMatchSnapshot } from "@/lib/match-history";
+import {
+  upsertFinishedMatchSnapshot,
+  upsertFinishedMatchSnapshotSync,
+} from "@/lib/match-history";
 import { revalidateTournamentSurfaces } from "@/lib/revalidate-tournament-surfaces";
 
 type AchievementType =
@@ -159,25 +163,49 @@ export async function finalizeTournament() {
   if (thirdPid != null) pushAchievement(thirdPid, "THIRD_PLACE");
   if (topScorerPid != null) pushAchievement(topScorerPid, "TOP_SCORER");
 
-  await db.transaction(async (tx) => {
-    for (const m of tourneyMatches) {
-      if (m.status !== "FINISHED") continue;
-      await upsertFinishedMatchSnapshot(tx, {
-        matchId: m.id,
-        playerHomeId: m.playerHomeId,
-        playerAwayId: m.playerAwayId,
-        scoreHome: m.scoreHome,
-        scoreAway: m.scoreAway,
-      });
-    }
+  type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-    if (toInsert.length > 0) {
-      await tx.insert(achievements).values(toInsert);
-    }
-    await tx
-      .update(tournaments)
-      .set({ status: "FINISHED" })
-      .where(eq(tournaments.id, active.id));
+  await runTransaction({
+    sqlite: (tx) => {
+      const t = asSqliteTx(tx);
+      for (const m of tourneyMatches) {
+        if (m.status !== "FINISHED") continue;
+        upsertFinishedMatchSnapshotSync(tx as Tx, {
+          matchId: m.id,
+          playerHomeId: m.playerHomeId,
+          playerAwayId: m.playerAwayId,
+          scoreHome: m.scoreHome,
+          scoreAway: m.scoreAway,
+        });
+      }
+      if (toInsert.length > 0) {
+        t.insert(achievements).values(toInsert).run();
+      }
+      t.update(tournaments)
+        .set({ status: "FINISHED" })
+        .where(eq(tournaments.id, active.id))
+        .run();
+    },
+    postgres: async (tx) => {
+      const t = tx as typeof db;
+      for (const m of tourneyMatches) {
+        if (m.status !== "FINISHED") continue;
+        await upsertFinishedMatchSnapshot(tx as Tx, {
+          matchId: m.id,
+          playerHomeId: m.playerHomeId,
+          playerAwayId: m.playerAwayId,
+          scoreHome: m.scoreHome,
+          scoreAway: m.scoreAway,
+        });
+      }
+      if (toInsert.length > 0) {
+        await t.insert(achievements).values(toInsert);
+      }
+      await t
+        .update(tournaments)
+        .set({ status: "FINISHED" })
+        .where(eq(tournaments.id, active.id));
+    },
   });
 
   revalidateTournamentSurfaces();
