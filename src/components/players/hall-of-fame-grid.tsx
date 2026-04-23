@@ -1,12 +1,24 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Users } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Input } from "@/components/ui/input";
 import type { AchievementType } from "@/lib/achievement-types";
 import { ACHIEVEMENT_LABELS } from "@/lib/achievement-types";
 import { cn } from "@/lib/utils";
+
+const INITIAL_COMPETITORS = 5;
+
+function normalizeHallSearch(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim();
+}
 
 export type HallPlayer = {
   id: string;
@@ -310,6 +322,57 @@ function PlayerListCard({ player }: { player: HallPlayer }) {
 }
 
 export function HallOfFameGrid({ players }: { players: HallPlayer[] }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAllCompetitors, setShowAllCompetitors] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const queryNorm = useMemo(() => normalizeHallSearch(searchQuery), [searchQuery]);
+  const hasActiveSearch = queryNorm.length > 0;
+
+  const filteredRest = useMemo(() => {
+    if (players.length <= 1) {
+      return [];
+    }
+    const r = players.slice(1);
+    if (!queryNorm) {
+      return r;
+    }
+    return r.filter((p) => normalizeHallSearch(p.name).includes(queryNorm));
+  }, [players, queryNorm]);
+
+  const displayedList = useMemo(() => {
+    if (hasActiveSearch) {
+      return filteredRest;
+    }
+    if (showAllCompetitors) {
+      return filteredRest;
+    }
+    return filteredRest.slice(0, INITIAL_COMPETITORS);
+  }, [filteredRest, hasActiveSearch, showAllCompetitors]);
+
+  const needsInternalScroll = displayedList.length > INITIAL_COMPETITORS;
+
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) {
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setSearchQuery("");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
   if (players.length === 0) {
     return (
       <div className="mx-auto max-w-5xl px-6">
@@ -336,7 +399,19 @@ export function HallOfFameGrid({ players }: { players: HallPlayer[] }) {
   }
 
   const featured = players[0]!;
-  const rest = players.slice(1);
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  const toggleSearch = () => {
+    if (searchOpen) {
+      closeSearch();
+    } else {
+      setSearchOpen(true);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-6">
@@ -360,41 +435,116 @@ export function HallOfFameGrid({ players }: { players: HallPlayer[] }) {
         <SideBento />
       </section>
 
-      <div className="mb-8 flex items-center justify-between gap-4">
-        <h3 className="font-headline text-xl font-bold tracking-tight text-on-surface">
+      <div className="relative mb-8 h-11 w-full shrink-0">
+        <h3
+          className={cn(
+            "pointer-events-none absolute left-0 top-1/2 z-0 max-w-[calc(100%-3.5rem)] -translate-y-1/2 truncate font-headline text-xl font-bold tracking-tight text-on-surface transition-opacity duration-200 ease-out",
+            searchOpen && "opacity-0",
+          )}
+        >
           Competidores
         </h3>
-        <div className="flex shrink-0 gap-2">
-          <button
-            type="button"
-            disabled
-            className="rounded-lg bg-surface-container-highest p-2 text-on-surface-variant opacity-50"
-            aria-label="Filtro em breve"
-          >
-            <MaterialSymbol name="filter_list" />
-          </button>
-          <button
-            type="button"
-            disabled
-            className="rounded-lg bg-surface-container-highest p-2 text-on-surface-variant opacity-50"
-            aria-label="Busca em breve"
-          >
-            <MaterialSymbol name="search" />
-          </button>
-        </div>
+        <AnimatePresence initial={false}>
+          {searchOpen ? (
+            <motion.div
+              key="search-panel"
+              id="hall-competitors-search"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: "calc(100% - 3rem)", opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="absolute inset-y-0 left-0 z-10 flex min-w-0 justify-start overflow-hidden rounded-lg border border-outline-variant/20 bg-surface-container-low/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] backdrop-blur-sm dark:bg-surface-container-low/80"
+            >
+              <div className="flex h-full min-w-0 max-w-full flex-1 items-center gap-0.5 pl-2.5 pr-1">
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  inputMode="search"
+                  autoComplete="off"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar competidor…"
+                  aria-label="Buscar competidor por nome"
+                  className={cn(
+                    "h-full min-h-0 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-0 text-sm shadow-none",
+                    "text-on-surface placeholder:text-on-surface-variant/55",
+                    "outline-none focus-visible:border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={closeSearch}
+                  className={cn(
+                    "inline-flex size-7 shrink-0 items-center justify-center rounded-md",
+                    "text-on-surface-variant/80 transition-colors",
+                    "hover:bg-surface-container-highest/80 hover:text-on-surface",
+                  )}
+                  aria-label="Fechar busca"
+                >
+                  <MaterialSymbol name="close" sizePx={18} />
+                </button>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+        <button
+          type="button"
+          onClick={toggleSearch}
+          aria-expanded={searchOpen}
+          aria-controls="hall-competitors-search"
+          className={cn(
+            "absolute top-1/2 right-0 z-20 inline-flex size-9 -translate-y-1/2 shrink-0 items-center justify-center rounded-lg",
+            "bg-surface-container-highest text-on-surface-variant transition-colors",
+            "hover:bg-surface-container-high hover:text-on-surface",
+            searchOpen && "text-m3-primary",
+          )}
+          aria-label={searchOpen ? "Fechar busca" : "Buscar competidor"}
+        >
+          <MaterialSymbol name="search" sizePx={20} />
+        </button>
       </div>
 
-      {rest.length > 0 ? (
-        <motion.ul
-          variants={stagger}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {rest.map((p) => (
-            <PlayerListCard key={p.id} player={p} />
-          ))}
-        </motion.ul>
+      {players.length > 1 ? (
+        hasActiveSearch && filteredRest.length === 0 ? (
+          <p className="font-body rounded-xl border border-outline-variant/10 bg-surface-container-low/80 px-4 py-6 text-center text-sm text-on-surface-variant">
+            Nenhum competidor encontrado para essa busca.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <div
+              className={cn(
+                needsInternalScroll &&
+                  "max-h-[min(32rem,70vh)] overflow-y-auto overflow-x-hidden pr-1 [scrollbar-gutter:stable]",
+              )}
+            >
+              <motion.ul
+                variants={stagger}
+                initial="hidden"
+                animate="show"
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                {displayedList.map((p) => (
+                  <PlayerListCard key={p.id} player={p} />
+                ))}
+              </motion.ul>
+            </div>
+            {!hasActiveSearch && filteredRest.length > INITIAL_COMPETITORS ? (
+              <button
+                type="button"
+                onClick={() => setShowAllCompetitors((v) => !v)}
+                className={cn(
+                  "font-body w-full rounded-xl border border-outline-variant/20 bg-surface-container-low/80 px-4 py-3",
+                  "text-sm text-on-surface-variant transition-colors",
+                  "hover:border-m3-primary/30 hover:text-on-surface",
+                )}
+              >
+                {showAllCompetitors
+                  ? "Mostrar menos"
+                  : `Ver todos (${filteredRest.length})`}
+              </button>
+            ) : null}
+          </div>
+        )
       ) : (
         <p className="font-body rounded-xl border border-outline-variant/10 bg-surface-container-low/80 px-4 py-6 text-center text-sm text-on-surface-variant">
           Você está vendo o destaque #1. Cadastre mais jogadores para preencher
