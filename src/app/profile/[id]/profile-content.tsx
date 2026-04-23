@@ -88,6 +88,7 @@ interface ProfileContentProps {
   /** E-mail só para o próprio usuário ou admin (perfil público oculta). */
   canViewEmail: boolean;
   isOwnProfile: boolean;
+  canChangeAvatar: boolean;
 }
 
 export function ProfileContent({
@@ -98,6 +99,7 @@ export function ProfileContent({
   viewerIsAdmin,
   canViewEmail,
   isOwnProfile,
+  canChangeAvatar,
 }: ProfileContentProps) {
   const [xpWidthPct, setXpWidthPct] = useState(0);
   const [currentImage, setCurrentImage] = useState(user.image);
@@ -229,7 +231,7 @@ export function ProfileContent({
               </p>
             ) : null}
           </div>
-          {isOwnProfile ? (
+          {canChangeAvatar ? (
             <div className="mt-4 w-full max-w-xl space-y-3 rounded-xl bg-surface-container-low p-4 text-left">
               <div className="flex items-center justify-between gap-2">
                 <p className="font-label text-[10px] font-bold uppercase tracking-widest text-m3-primary">

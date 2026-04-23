@@ -1,9 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { db } from "@/db";
-import { achievements, tournaments, user } from "@/db/schema";
+import { account, achievements, tournaments, user } from "@/db/schema";
 import {
   ACHIEVEMENT_TYPES,
   type AchievementType,
@@ -35,7 +35,7 @@ export default async function ProfilePage({
     notFound();
   }
 
-  const [stats, achievementRows] = await Promise.all([
+  const [stats, achievementRows, googleAccountRow] = await Promise.all([
     computeUserProfileStats(id),
     db
       .select({
@@ -48,6 +48,12 @@ export default async function ProfilePage({
       .innerJoin(tournaments, eq(achievements.tournamentId, tournaments.id))
       .where(eq(achievements.userId, id))
       .orderBy(desc(achievements.createdAt)),
+    db
+      .select({ id: account.id })
+      .from(account)
+      .where(and(eq(account.userId, id), eq(account.providerId, "google")))
+      .limit(1)
+      .then((rows) => rows[0]),
   ]);
 
   const achievementCounts = Object.fromEntries(
@@ -65,6 +71,8 @@ export default async function ProfilePage({
   );
 
   const isOwnProfile = session?.user?.id === id;
+  const isGoogleAccount = Boolean(googleAccountRow);
+  const canChangeAvatar = isOwnProfile && !isGoogleAccount;
 
   return (
     <ProfileContent
@@ -88,6 +96,7 @@ export default async function ProfilePage({
       viewerIsAdmin={viewerIsAdmin}
       canViewEmail={canViewEmail}
       isOwnProfile={isOwnProfile}
+      canChangeAvatar={canChangeAvatar}
     />
   );
 }
