@@ -3,8 +3,11 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 
+import { updateOwnAvatar } from "@/app/actions/profile";
+import { AVATAR_CATALOG } from "@/constants/avatar-catalog";
 import { GrantTrophyDialog } from "@/components/profile/grant-trophy-dialog";
 import { TrophyRoomGrid } from "@/components/profile/trophy-room-grid";
 import type { AchievementType } from "@/lib/achievement-types";
@@ -96,6 +99,9 @@ export function ProfileContent({
   isOwnProfile,
 }: ProfileContentProps) {
   const [xpWidthPct, setXpWidthPct] = useState(0);
+  const [currentImage, setCurrentImage] = useState(user.image);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [isSavingAvatar, startAvatarTransition] = useTransition();
 
   useEffect(() => {
     setXpWidthPct(0);
@@ -111,6 +117,29 @@ export function ProfileContent({
       cancelAnimationFrame(raf2);
     };
   }, [user.id, stats]);
+
+  useEffect(() => {
+    setCurrentImage(user.image);
+  }, [user.image]);
+
+  const avatarsByCategory = {
+    cartoon: AVATAR_CATALOG.filter((avatar) => avatar.category === "cartoon"),
+    gamer: AVATAR_CATALOG.filter((avatar) => avatar.category === "gamer"),
+  };
+
+  function handleAvatarSelect(imageUrl: string) {
+    if (!isOwnProfile || imageUrl === currentImage) return;
+    startAvatarTransition(async () => {
+      try {
+        await updateOwnAvatar({ imageUrl });
+        setCurrentImage(imageUrl);
+        toast.success("Avatar atualizado com sucesso.");
+        setShowAvatarPicker(false);
+      } catch {
+        toast.error("Não foi possível atualizar o avatar.");
+      }
+    });
+  }
 
   const { permanentFillPct, pendingFillPct } = xpBarPendingSplit(
     stats,
@@ -147,10 +176,10 @@ export function ProfileContent({
         <motion.section variants={fadeUp} className="flex flex-col items-center text-center">
           <div className="relative">
             <div className="h-32 w-32 rounded-full bg-linear-to-tr from-m3-primary to-[#00f1fe] p-1 shadow-[0_0_15px_rgba(133,173,255,0.35)]">
-              {user.image ? (
+              {currentImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={user.image}
+                  src={currentImage}
                   alt=""
                   referrerPolicy="no-referrer"
                   className="h-full w-full rounded-full border-4 border-m3-background object-cover"
@@ -175,6 +204,63 @@ export function ProfileContent({
               </p>
             ) : null}
           </div>
+          {isOwnProfile ? (
+            <div className="mt-4 w-full max-w-xl space-y-3 rounded-xl bg-surface-container-low p-4 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-m3-primary">
+                  Avatar do perfil
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker((v) => !v)}
+                  className="rounded-md px-3 py-1.5 font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface"
+                >
+                  {showAvatarPicker ? "Fechar" : "Alterar avatar"}
+                </button>
+              </div>
+              {showAvatarPicker ? (
+                <div className="space-y-3">
+                  {(["cartoon", "gamer"] as const).map((categoryKey) => (
+                    <div key={categoryKey} className="space-y-2">
+                      <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                        {categoryKey === "cartoon" ? "Cartoon" : "Gamer"}
+                      </p>
+                      <div className="grid grid-cols-5 gap-2">
+                        {avatarsByCategory[categoryKey].map((avatar) => {
+                          const isSelected = currentImage === avatar.imageUrl;
+                          return (
+                            <button
+                              key={avatar.id}
+                              type="button"
+                              onClick={() => handleAvatarSelect(avatar.imageUrl)}
+                              disabled={isSavingAvatar}
+                              className={cn(
+                                "rounded-lg border p-0.5 transition-all",
+                                isSelected
+                                  ? "border-m3-primary shadow-[0_0_12px_rgba(133,173,255,0.45)]"
+                                  : "border-outline-variant/20 hover:border-m3-primary/40",
+                                isSavingAvatar && "opacity-60",
+                              )}
+                              aria-label={`Selecionar avatar ${avatar.name}`}
+                              aria-pressed={isSelected}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={avatar.imageUrl}
+                                alt={avatar.name}
+                                className="size-10 rounded-md object-cover"
+                                loading="lazy"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </motion.section>
 
         <motion.section

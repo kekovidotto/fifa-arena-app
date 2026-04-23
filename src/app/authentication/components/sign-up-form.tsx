@@ -10,6 +10,7 @@ import * as z from "zod";
 
 import { Field, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { AVATAR_CATALOG } from "@/constants/avatar-catalog";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,7 @@ function SignUpForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -66,6 +68,7 @@ function SignUpForm() {
         email: values.email,
         password: values.password,
         name: values.name,
+        image: selectedAvatarUrl ?? undefined,
       },
       {
         onSuccess: () => {
@@ -90,6 +93,10 @@ function SignUpForm() {
   };
 
   const disableSubmit = form.formState.isSubmitting || !acceptedTerms;
+  const avatarsByCategory = {
+    cartoon: AVATAR_CATALOG.filter((avatar) => avatar.category === "cartoon"),
+    gamer: AVATAR_CATALOG.filter((avatar) => avatar.category === "gamer"),
+  };
 
   return (
     <div className="relative z-10 w-full max-w-md">
@@ -242,6 +249,61 @@ function SignUpForm() {
               Eu aceito os <span className="font-bold text-m3-primary">Termos de Combate</span> e a{" "}
               <span className="font-bold text-m3-primary">Privacidade de Dados</span> do Nexus Overdrive.
             </label>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-outline-variant/20 bg-surface-container-low p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-label text-[10px] font-bold uppercase tracking-widest text-m3-primary">
+                Avatar (opcional)
+              </p>
+              {selectedAvatarUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedAvatarUrl(null)}
+                  className="rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface"
+                >
+                  limpar
+                </button>
+              ) : null}
+            </div>
+            <p className="font-body text-xs text-on-surface-variant">
+              Escolha 1 dos 50 avatares (25 cartoon + 25 gamer).
+            </p>
+            {(["cartoon", "gamer"] as const).map((categoryKey) => (
+              <div key={categoryKey} className="space-y-2">
+                <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                  {categoryKey === "cartoon" ? "Cartoon" : "Gamer"}
+                </p>
+                <div className="grid grid-cols-5 gap-2">
+                  {avatarsByCategory[categoryKey].map((avatar) => {
+                    const selected = selectedAvatarUrl === avatar.imageUrl;
+                    return (
+                      <button
+                        key={avatar.id}
+                        type="button"
+                        onClick={() => setSelectedAvatarUrl(avatar.imageUrl)}
+                        className={cn(
+                          "rounded-lg border p-0.5 transition-all",
+                          selected
+                            ? "border-m3-primary shadow-[0_0_12px_rgba(133,173,255,0.45)]"
+                            : "border-outline-variant/20 hover:border-m3-primary/40",
+                        )}
+                        aria-label={`Selecionar avatar ${avatar.name}`}
+                        aria-pressed={selected}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={avatar.imageUrl}
+                          alt={avatar.name}
+                          className="size-10 rounded-md object-cover"
+                          loading="lazy"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="pt-4">
