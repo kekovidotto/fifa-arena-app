@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import type { MatchCardData } from "@/lib/tournament-utils";
 import { STAGE_LABELS, STAGE_ORDER } from "@/lib/tournament-utils";
 import { cn } from "@/lib/utils";
@@ -25,11 +26,11 @@ const stagger = {
 };
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 28 },
+  hidden: { opacity: 0, y: 24 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
 
@@ -74,6 +75,98 @@ type GroupedSection = {
   matches: MatchCardData[];
 };
 
+function sectionTag(section: GroupedSection) {
+  const allPending = section.matches.every((m) => m.status === "PENDING");
+  return allPending ? "Tournament phase" : "Encerradas";
+}
+
+function StatusTabs({
+  activeTab,
+  counts,
+  onChange,
+}: {
+  activeTab: Tab;
+  counts: Record<Tab, number>;
+  onChange: (tab: Tab) => void;
+}) {
+  return (
+    <section className="rounded-xl bg-surface-container-low p-1">
+      <div className="flex items-center gap-1">
+        {tabs.map((tab) => {
+          const active = tab.value === activeTab;
+          return (
+            <Button
+              key={tab.value}
+              type="button"
+              onClick={() => onChange(tab.value)}
+              variant="ghost"
+              className={cn(
+                "h-auto flex-1 rounded-lg px-3 py-2 font-label text-[10px] font-black uppercase tracking-widest",
+                active
+                  ? "glow-primary-soft bg-surface-container-highest text-m3-primary"
+                  : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
+              )}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={cn(
+                  "ml-1 rounded-full px-1.5 py-0.5 text-[9px] tabular-nums",
+                  active ? "bg-m3-primary/15" : "bg-surface-container",
+                )}
+              >
+                {counts[tab.value]}
+              </span>
+            </Button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function StageChips({
+  sections,
+  selected,
+  onSelect,
+}: {
+  sections: GroupedSection[];
+  selected: string;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <section className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <Button
+        type="button"
+        onClick={() => onSelect("all")}
+        className={cn(
+          "h-auto shrink-0 rounded-full px-5 py-2 font-label text-[10px] font-black uppercase tracking-widest",
+          selected === "all"
+            ? "bg-m3-primary text-on-primary"
+            : "bg-surface-container-highest text-on-surface-variant hover:bg-m3-primary/15 hover:text-m3-primary",
+        )}
+      >
+        Todas
+      </Button>
+
+      {sections.map((section) => (
+        <Button
+          key={section.key}
+          type="button"
+          onClick={() => onSelect(section.key)}
+          className={cn(
+            "h-auto shrink-0 rounded-full px-5 py-2 font-label text-[10px] font-black uppercase tracking-widest",
+            selected === section.key
+              ? "bg-m3-primary text-on-primary"
+              : "bg-surface-container-highest text-on-surface-variant hover:bg-m3-primary/15 hover:text-m3-primary",
+          )}
+        >
+          {section.title}
+        </Button>
+      ))}
+    </section>
+  );
+}
+
 export function MatchesContent({
   matches,
   viewerIsAdmin,
@@ -81,11 +174,10 @@ export function MatchesContent({
 }: {
   matches: MatchCardData[];
   viewerIsAdmin: boolean;
-  /** Quando false, mostra estado vazio (sem campeonato ACTIVE). */
   hasActiveTournament?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("pending");
-  const [search, setSearch] = useState("");
+  const [selectedSection, setSelectedSection] = useState("all");
 
   const counts = useMemo(
     () => ({
@@ -97,26 +189,16 @@ export function MatchesContent({
   );
 
   const filtered = useMemo(() => {
-    let result = matches;
-
-    if (activeTab === "pending")
-      result = result.filter((m) => m.status === "PENDING");
-    else if (activeTab === "finished")
-      result = result.filter((m) => m.status === "FINISHED");
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (m) =>
-          m.homePlayer.name.toLowerCase().includes(q) ||
-          m.awayPlayer.name.toLowerCase().includes(q) ||
-          m.homePlayer.teamName.toLowerCase().includes(q) ||
-          m.awayPlayer.teamName.toLowerCase().includes(q),
-      );
+    if (activeTab === "pending") {
+      return matches.filter((m) => m.status === "PENDING");
     }
 
-    return result;
-  }, [matches, activeTab, search]);
+    if (activeTab === "finished") {
+      return matches.filter((m) => m.status === "FINISHED");
+    }
+
+    return matches;
+  }, [matches, activeTab]);
 
   const groupedSections = useMemo((): GroupedSection[] => {
     const map = new Map<string, MatchCardData[]>();
@@ -150,31 +232,17 @@ export function MatchesContent({
     return entries;
   }, [filtered]);
 
+  const visibleSections = useMemo(() => {
+    if (selectedSection === "all") return groupedSections;
+
+    const exists = groupedSections.some((section) => section.key === selectedSection);
+    if (!exists) return groupedSections;
+
+    return groupedSections.filter((section) => section.key === selectedSection);
+  }, [groupedSections, selectedSection]);
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-8 md:pt-6">
-      <header className="mb-8 flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <MaterialSymbol
-            name="sports_soccer"
-            className="text-3xl text-m3-primary"
-          />
-          <div className="min-w-0">
-            <h1 className="font-headline text-xl font-black uppercase tracking-tight text-m3-primary md:text-2xl">
-              Match center
-            </h1>
-            <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
-              Agenda oficial · FIFA Arena
-            </p>
-          </div>
-        </div>
-        <div
-          className="hidden shrink-0 rounded-full border border-m3-primary/20 bg-surface-container-low p-2 sm:flex"
-          aria-hidden
-        >
-          <MaterialSymbol name="emoji_events" className="text-m3-primary/80" />
-        </div>
-      </header>
-
       {!hasActiveTournament ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-outline-variant/10 bg-surface-container-low/40 py-16 text-center">
           <MaterialSymbol
@@ -186,101 +254,45 @@ export function MatchesContent({
               Nenhum campeonato ativo
             </p>
             <p className="font-body text-sm text-on-surface-variant">
-              Quando um administrador iniciar uma nova Copa, as partidas
-              aparecerão aqui.
+              Quando um administrador iniciar uma nova Copa, as partidas aparecerão
+              aqui.
             </p>
           </div>
         </div>
       ) : null}
 
       {hasActiveTournament ? (
-      <section className="mb-8 space-y-4">
-        <div className="relative">
-          <MaterialSymbol
-            name="search"
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant"
+        <div className="space-y-4">
+          <StatusTabs
+            activeTab={activeTab}
+            counts={counts}
+            onChange={(tab) => {
+              setActiveTab(tab);
+              setSelectedSection("all");
+            }}
           />
-          <input
-            type="search"
-            placeholder="Buscar jogador ou clube..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="font-label w-full rounded-xl border-0 bg-surface-container-low py-4 pr-4 pl-12 text-sm text-on-surface placeholder:text-outline outline-none ring-m3-primary/50 focus:ring-2"
+          <StageChips
+            sections={groupedSections}
+            selected={selectedSection}
+            onSelect={setSelectedSection}
           />
-          {search ? (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest hover:text-on-surface"
-              aria-label="Limpar busca"
-            >
-              <MaterialSymbol name="close" className="text-lg" />
-            </button>
-          ) : null}
         </div>
-
-        <div className="flex rounded-xl bg-surface-container-low p-1">
-          {tabs.map((tab) => {
-            const active = activeTab === tab.value;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setActiveTab(tab.value)}
-                className={cn(
-                  "flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2.5 font-label text-[10px] font-bold uppercase tracking-widest transition-all sm:flex-row sm:justify-center sm:gap-1.5 sm:text-xs",
-                  active
-                    ? "bg-surface-container-highest text-m3-primary shadow-sm glow-primary-soft"
-                    : "text-on-surface-variant hover:text-on-surface",
-                )}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[9px] tabular-nums",
-                    active ? "bg-m3-primary/15" : "bg-surface-container/80",
-                  )}
-                >
-                  {counts[tab.value]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
       ) : null}
 
-      {hasActiveTournament && groupedSections.length > 0 ? (
+      {hasActiveTournament && visibleSections.length > 0 ? (
         <motion.div
-          key={`${activeTab}-${search}`}
+          key={`${activeTab}-${selectedSection}`}
           variants={stagger}
           initial="hidden"
           animate="show"
-          className="space-y-10"
+          className="mt-5 space-y-4"
         >
-          {groupedSections.map((section) => (
-            <motion.section key={section.key} variants={fadeUp}>
-              <div className="mb-4 flex items-baseline justify-between px-1">
-                <h2 className="font-headline text-2xl font-bold tracking-tight text-on-surface">
-                  {section.title}
-                </h2>
-                <span className="rounded-full border border-m3-primary/15 bg-surface-container-high px-3 py-1 font-label text-xs font-black uppercase tracking-wider text-m3-primary">
-                  {String(section.matches.length).padStart(2, "0")} jogos
-                </span>
-              </div>
-
-              <div className="space-y-4">
-                {section.matches.map((match, idx) => (
-                  <motion.div key={match.id} variants={fadeUp}>
-                    <MatchEsportsCard
-                      match={match}
-                      roundIndex={idx}
-                      viewerIsAdmin={viewerIsAdmin}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
+          {visibleSections.map((section) => (
+            <RoundSection
+              key={section.key}
+              section={section}
+              viewerIsAdmin={viewerIsAdmin}
+            />
           ))}
         </motion.div>
       ) : hasActiveTournament ? (
@@ -290,10 +302,87 @@ export function MatchesContent({
             className="text-5xl text-on-surface-variant/40"
           />
           <p className="font-body text-sm text-on-surface-variant">
-            Nenhuma partida encontrada
-            {search.trim() ? " para esta busca" : ""}.
+            Nenhuma partida encontrada.
           </p>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RoundSection({
+  section,
+  viewerIsAdmin,
+}: {
+  section: GroupedSection;
+  viewerIsAdmin: boolean;
+}) {
+  return (
+    <motion.section
+      variants={fadeUp}
+      className="overflow-hidden rounded-2xl border border-outline-variant/10 bg-surface-container-low"
+    >
+      <div className="flex items-center justify-between bg-surface-container-high/60 p-4">
+        <div>
+          <span className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-m3-primary/80">
+            {sectionTag(section)}
+          </span>
+          <h2 className="font-headline text-2xl font-black uppercase tracking-tight text-on-surface">
+            {section.title}
+          </h2>
+        </div>
+        <MaterialSymbol name="expand_less" className="text-2xl text-m3-primary" />
+      </div>
+
+      <div className="space-y-3 p-4">
+        {section.matches.map((match, idx) => (
+          <motion.div key={match.id} variants={fadeUp}>
+            <MatchRowCard
+              match={match}
+              roundIndex={idx}
+              viewerIsAdmin={viewerIsAdmin}
+            />
+          </motion.div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+function TeamBadge({
+  role,
+  name,
+  team,
+  logoUrl,
+  align = "left",
+}: {
+  role: "Casa" | "Fora";
+  name: string;
+  team: string;
+  logoUrl?: string | null;
+  align?: "left" | "right";
+}) {
+  const isRight = align === "right";
+
+  return (
+    <div
+      className={cn("flex w-5/12 items-center gap-2", isRight && "justify-end text-right")}
+    >
+      {!isRight ? (
+        <TeamShield logoUrl={logoUrl} label={team} className="size-11 rounded-lg" />
+      ) : null}
+
+      <div className="min-w-0 overflow-hidden">
+        <p className="mb-1 font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+          {role}
+        </p>
+        <h3 className="truncate font-headline text-sm font-bold uppercase tracking-tight text-on-surface">
+          {name}
+        </h3>
+      </div>
+
+      {isRight ? (
+        <TeamShield logoUrl={logoUrl} label={team} className="size-11 rounded-lg" />
       ) : null}
     </div>
   );
@@ -302,13 +391,20 @@ export function MatchesContent({
 function TeamShield({
   logoUrl,
   label,
+  className,
 }: {
   logoUrl: string | null | undefined;
   label: string;
+  className?: string;
 }) {
   const initial = label.slice(0, 1).toUpperCase() || "?";
   return (
-    <div className="mb-3 flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface-container-highest p-2 md:size-18">
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-outline-variant/20 bg-surface-container-high p-2",
+        className,
+      )}
+    >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -318,7 +414,7 @@ function TeamShield({
           className="max-h-full max-w-full object-contain"
         />
       ) : (
-        <span className="font-headline text-2xl font-black text-m3-primary">
+        <span className="font-headline text-lg font-black text-m3-primary">
           {initial}
         </span>
       )}
@@ -326,7 +422,7 @@ function TeamShield({
   );
 }
 
-function MatchEsportsCard({
+function MatchRowCard({
   match,
   roundIndex,
   viewerIsAdmin,
@@ -336,10 +432,6 @@ function MatchEsportsCard({
   viewerIsAdmin: boolean;
 }) {
   const isPending = match.status === "PENDING";
-  const groupBadge =
-    match.type === "GROUP"
-      ? match.groupName || "Grupo"
-      : "Mata-mata";
   const roundLabel =
     match.type === "GROUP"
       ? `Rodada ${String(roundIndex + 1).padStart(2, "0")}`
@@ -348,84 +440,56 @@ function MatchEsportsCard({
   return (
     <div
       className={cn(
-        "arena-glass-card editorial-shadow overflow-hidden rounded-2xl border border-outline-variant/10 p-5",
-        !isPending && "border-m3-primary/15",
+        "arena-glass-card overflow-hidden rounded-xl border-l-4 border-m3-primary bg-surface-container-high/35 p-3",
+        !isPending && "border-l-m3-primary/25",
       )}
     >
-      <div className="mb-5 flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            "rounded-full px-3 py-1 font-label text-[10px] font-black uppercase tracking-widest",
-            match.type === "GROUP"
-              ? "border border-m3-primary/25 bg-m3-primary/15 text-m3-primary"
-              : "border border-purple-500/25 bg-purple-500/10 text-purple-300",
-          )}
-        >
-          {groupBadge}
-        </span>
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-          {roundLabel}
-        </span>
-      </div>
+      <div className="mb-4 flex items-center justify-between">
+        <TeamBadge
+          role="Casa"
+          name={match.homePlayer.teamName}
+          team={match.homePlayer.teamName}
+          logoUrl={match.homePlayer.teamLogo}
+        />
 
-      <div className="mb-6 flex items-start justify-between gap-1 md:items-center">
-        <div className="flex min-w-0 flex-1 flex-col items-center text-center">
-          <TeamShield
-            logoUrl={match.homePlayer.teamLogo}
-            label={match.homePlayer.teamName}
-          />
-          <span className="line-clamp-2 font-headline text-sm font-bold text-on-surface">
-            {match.homePlayer.name}
-          </span>
-          <span className="mt-0.5 line-clamp-1 font-label text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
-            {match.homePlayer.teamName}
-          </span>
-        </div>
-
-        <div className="flex shrink-0 flex-col items-center justify-center px-1 pt-10 md:px-4 md:pt-0">
+        <div className="flex shrink-0 flex-col items-center px-1">
           {isPending ? (
-            <span className="font-headline text-3xl font-black italic text-outline-variant/40">
-              VS
-            </span>
+            <span className="font-headline text-lg font-black italic text-m3-primary/40">VS</span>
           ) : (
-            <div className="flex items-center gap-2 tabular-nums">
-              <span className="font-headline text-4xl font-black text-m3-primary drop-shadow-[0_0_12px_rgba(133,173,255,0.45)]">
+            <div className="flex items-center gap-1 tabular-nums">
+              <span className="font-headline text-2xl font-black text-m3-primary">
                 {match.scoreHome}
               </span>
-              <span className="font-headline text-xl font-light text-on-surface-variant">
-                —
-              </span>
-              <span className="font-headline text-4xl font-black text-m3-primary drop-shadow-[0_0_12px_rgba(133,173,255,0.45)]">
+              <span className="text-sm text-on-surface-variant">-</span>
+              <span className="font-headline text-2xl font-black text-m3-primary">
                 {match.scoreAway}
               </span>
             </div>
           )}
+          <div className="mt-1 rounded-full bg-m3-primary/10 px-2 py-0.5 font-label text-[8px] font-bold uppercase text-m3-primary">
+            {roundLabel}
+          </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col items-center text-center">
-          <TeamShield
-            logoUrl={match.awayPlayer.teamLogo}
-            label={match.awayPlayer.teamName}
-          />
-          <span className="line-clamp-2 font-headline text-sm font-bold text-on-surface">
-            {match.awayPlayer.name}
-          </span>
-          <span className="mt-0.5 line-clamp-1 font-label text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
-            {match.awayPlayer.teamName}
-          </span>
-        </div>
+        <TeamBadge
+          role="Fora"
+          name={match.awayPlayer.teamName}
+          team={match.awayPlayer.teamName}
+          logoUrl={match.awayPlayer.teamLogo}
+          align="right"
+        />
       </div>
 
       {isPending ? (
         viewerIsAdmin ? (
-          <Link
-            href={`/match/${match.id}`}
-            className="glow-primary-soft flex w-full items-center justify-center rounded-xl bg-linear-to-r from-m3-primary to-primary-container py-4 font-headline text-sm font-black uppercase tracking-widest text-on-primary transition-transform hover:scale-[1.01] active:scale-[0.99]"
+          <Button
+            asChild
+            className="glow-primary-soft h-auto w-full rounded-lg bg-linear-to-r from-m3-primary to-primary-container py-2.5 font-headline text-[11px] font-black uppercase tracking-[0.2em] text-on-primary hover:brightness-105"
           >
-            Lançar placar
-          </Link>
+            <Link href={`/match/${match.id}`}>Lançar placar</Link>
+          </Button>
         ) : (
-          <div className="rounded-xl bg-surface-container-highest py-4 text-center font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+          <div className="rounded-lg bg-surface-container-highest py-2.5 text-center font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
             Aguardando resultado
           </div>
         )
@@ -436,13 +500,13 @@ function MatchEsportsCard({
             Encerrada
           </div>
           {viewerIsAdmin ? (
-            <Link
-              href={`/match/${match.id}`}
-              className="flex items-center justify-center gap-2 rounded-xl border border-outline-variant/20 bg-surface-container-high py-3 font-headline text-xs font-semibold text-on-surface transition-colors hover:border-m3-primary/40 hover:text-m3-primary sm:px-6"
+            <Button
+              asChild
+              variant="outline"
+              className="h-auto rounded-lg border-outline-variant/20 bg-surface-container-high py-2.5 font-headline text-[11px] font-semibold uppercase tracking-wide text-on-surface hover:border-m3-primary/40 hover:text-m3-primary sm:px-4"
             >
-              <MaterialSymbol name="edit" className="text-lg" />
-              Ajustar placar
-            </Link>
+              <Link href={`/match/${match.id}`}>Ajustar placar</Link>
+            </Button>
           ) : null}
         </div>
       )}
