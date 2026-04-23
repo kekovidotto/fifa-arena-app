@@ -12,6 +12,7 @@ import { GrantTrophyDialog } from "@/components/profile/grant-trophy-dialog";
 import { TrophyRoomGrid } from "@/components/profile/trophy-room-grid";
 import type { AchievementType } from "@/lib/achievement-types";
 import type { UserProfileStats } from "@/lib/profile-stats";
+import { lolRankFromLevel } from "@/lib/xp-system";
 import { cn } from "@/lib/utils";
 
 const fadeUp = {
@@ -152,6 +153,25 @@ export function ProfileContent({
           pendInnerPct: (pendingFillPct / xpWidthPct) * 100,
         }
       : { permInnerPct: 0, pendInnerPct: 0 };
+  const rank = lolRankFromLevel(stats.level);
+  const rankBadgeClassName = {
+    BRONZE:
+      "bg-amber-600 text-amber-50 ring-1 ring-amber-300/55 shadow-[0_0_12px_rgba(245,158,11,0.55)]",
+    PRATA:
+      "bg-slate-400 text-slate-950 ring-1 ring-slate-200/70 shadow-[0_0_12px_rgba(148,163,184,0.55)]",
+    OURO:
+      "bg-yellow-400 text-yellow-950 ring-1 ring-yellow-200/75 shadow-[0_0_14px_rgba(250,204,21,0.6)]",
+    PLATINA:
+      "bg-cyan-400 text-cyan-950 ring-1 ring-cyan-200/70 shadow-[0_0_14px_rgba(34,211,238,0.55)]",
+    ESMERALDA:
+      "bg-emerald-500 text-emerald-50 ring-1 ring-emerald-200/60 shadow-[0_0_14px_rgba(16,185,129,0.6)]",
+    DIAMANTE:
+      "bg-indigo-400 text-indigo-950 ring-1 ring-indigo-200/70 shadow-[0_0_16px_rgba(129,140,248,0.6)]",
+    MESTRE:
+      "bg-fuchsia-500 text-fuchsia-50 ring-1 ring-fuchsia-200/60 shadow-[0_0_16px_rgba(217,70,239,0.65)]",
+    GRAO_MESTRE:
+      "bg-rose-500 text-rose-50 ring-1 ring-rose-200/65 shadow-[0_0_16px_rgba(244,63,94,0.65)]",
+  }[rank.tier];
 
   return (
     <div className="bg-m3-background text-on-surface min-h-dvh font-body">
@@ -190,8 +210,13 @@ export function ProfileContent({
                 </div>
               )}
             </div>
-            <div className="absolute -bottom-2 right-0 rounded-full bg-m3-secondary px-3 py-1 font-headline text-sm font-bold text-on-secondary shadow-lg">
-              PRO
+            <div
+              className={cn(
+                "absolute -bottom-2 right-0 rounded-full px-3 py-1 font-headline text-sm font-bold shadow-lg",
+                rankBadgeClassName,
+              )}
+            >
+              {rank.label}
             </div>
           </div>
           <div className="mt-5 space-y-1">
